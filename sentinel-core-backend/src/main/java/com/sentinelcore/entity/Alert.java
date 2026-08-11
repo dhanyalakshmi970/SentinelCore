@@ -1,23 +1,42 @@
 package com.sentinelcore.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-
-import java.time.LocalDateTime;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name="alerts")
+@Table(name = "alert")
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Alert {
+
     @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-    private Long assetId;
+    @ManyToOne
+    @JoinColumn(name = "asset_id")
+    private Asset asset;
 
-    private Long alertType;
-    private String severity;
-    private String message;
-    private String status;
-    private LocalDateTime createdAt;
+    @Enumerated(EnumType.STRING)
+    private AlertSeverity alertSeverity;
+
+    @Enumerated(EnumType.STRING)
+    private AlertStatus alertStatus;
+
+    public enum AlertSeverity {
+        LOW,
+        MEDIUM,
+        HIGH,
+        CRITICAL
+    }
+
+    public enum AlertStatus {
+        ACTIVE,
+        RESOLVED
+    }
 }

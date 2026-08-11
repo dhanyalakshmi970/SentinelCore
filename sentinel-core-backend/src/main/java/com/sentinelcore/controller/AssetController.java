@@ -1,33 +1,39 @@
 package com.sentinelcore.controller;
 
+
 import com.sentinelcore.dto.AssetDTO;
-import com.sentinelcore.entity.Asset;
+import com.sentinelcore.dto.DashboardSummaryDTO;
 import com.sentinelcore.service.AssetService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/assets")
-@CrossOrigin(origins = "https://localhost:5173")
-@AllArgsConstructor
+@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
 public class AssetController {
 
     private final AssetService assetService;
-    @GetMapping("/find")
-    public List<AssetDTO> findAssets(){
+
+    @GetMapping
+    public List<AssetDTO> getAllAssets() {
         return assetService.getAllAssets();
     }
 
     @GetMapping("/{id}")
-    public final AssetDTO getById(@PathVariable Long id){
-        return assetService.getById(id);
+    public AssetDTO getAsset(@PathVariable Long id) {
+        return assetService.getAssetById(id);
     }
 
-    @PostMapping("/add")
-    public Asset createAsset(@RequestBody Asset asset) {
-        return assetService.createAsset(asset);
+    @PostMapping
+    public AssetDTO createAsset(@RequestBody AssetDTO dto) {
+        return assetService.createAsset(dto);
     }
 
+    @GetMapping("/dashboard/summary")
+    public DashboardSummaryDTO getDashboardSummary() {
+        return assetService.getDashboardSummary();
+    }
 }

@@ -1,17 +1,18 @@
-package com.sentinelcore.dto;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+package	com.sentinelcore.dto;
+import	lombok.*;
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class AssetDTO {
-    private Long id;
-    private String assetName;
-    private String assetType;
+public class AssetDTO
+{
+    private	Long id;
+    private	String	assetName;
+    private	String	assetType;
+    private	String ipAddress;
+    private	Double cpuUsage;
+    private Double memoryUsage;
+    private	Double diskUsage;
+    private	Double networkUsage;
     private String status;
 }

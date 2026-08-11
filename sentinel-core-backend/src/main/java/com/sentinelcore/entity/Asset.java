@@ -1,15 +1,10 @@
 package com.sentinelcore.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
-@Table(name="assets")
+@Table(name = "assets")
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,23 +15,30 @@ public class Asset {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String assetName;
 
+    @Column(nullable = false)
     private String assetType;
 
+    @Column(nullable = false, unique = true)
     private String ipAddress;
-
-    private String location;
-
-    private String status;
 
     private Double cpuUsage;
 
     private Double memoryUsage;
 
-    private Double disk;
+    private Double diskUsage;
 
-    private Double network;
+    private Double networkUsage;
 
-    private LocalDateTime createdDate;
+    @Enumerated(EnumType.STRING)
+    private AssetStatus status;
+
+    public enum AssetStatus {
+        ONLINE,
+        WARNING,
+        CRITICAL,
+        OFFLINE
+    }
 }
