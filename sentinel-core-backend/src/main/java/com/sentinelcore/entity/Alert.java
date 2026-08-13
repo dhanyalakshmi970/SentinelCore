@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "alert")
 @Data
@@ -16,27 +18,17 @@ public class Alert {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-
+    private Long id;
     @ManyToOne
-    @JoinColumn(name = "asset_id")
+    @JoinColumn(name = "asset_id", nullable = false)
     private Asset asset;
-
     @Enumerated(EnumType.STRING)
-    private AlertSeverity alertSeverity;
-
+    private AlertSeverity severity;
+    private String message;
     @Enumerated(EnumType.STRING)
-    private AlertStatus alertStatus;
-
-    public enum AlertSeverity {
-        LOW,
-        MEDIUM,
-        HIGH,
-        CRITICAL
-    }
-
-    public enum AlertStatus {
-        ACTIVE,
-        RESOLVED
-    }
+    private AlertStatus status;
+    private LocalDateTime createdAt;
+    private LocalDateTime resolvedAt;
+    public enum AlertSeverity { LOW, MEDIUM, HIGH, CRITICAL }
+    public enum AlertStatus { OPEN, ACKNOWLEDGED, RESOLVED }
 }

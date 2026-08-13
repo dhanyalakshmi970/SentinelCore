@@ -17,7 +17,7 @@ public class AssetController {
 
     private final AssetService assetService;
 
-    @GetMapping
+    @GetMapping("/getAll")
     public List<AssetDTO> getAllAssets() {
         return assetService.getAllAssets();
     }
