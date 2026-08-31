@@ -1,878 +1,750 @@
-
-import { useEffect, useState } from 'react';
-import { getDashboardSummary, getAllAssets } from '../api/assetApi';
+import { useEffect, useState } from "react";
 
 import {
+    Box,
     Card,
     CardContent,
     Typography,
     Grid,
-    Box,
     Chip,
-    LinearProgress,
-    Divider
-} from '@mui/material';
+    Alert,
+    CircularProgress,
+    Button
+} from "@mui/material";
 
 import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    Tooltip,
-    ResponsiveContainer,
-    PieChart,
-    Pie,
-    Cell,
-    BarChart,
-    Bar,
-    CartesianGrid
-} from 'recharts';
+    Computer,
+    CheckCircle,
+    Warning,
+    ErrorOutlineOutlined,
+    Memory,
+    Storage,
+    Refresh
+} from "@mui/icons-material";
+
+import {
+    getAllAssets,
+    getDashboardSummary
+} from "../api/assetApi";
+
+import axiosClient from "../api/axiosClient";
+
+import AssetControls from "./AssetControls";
 
 
 function Dashboard() {
 
-    const [summary, setSummary] = useState(null);
     const [assets, setAssets] = useState([]);
+    const [summary, setSummary] = useState(null);
+    const [alerts, setAlerts] = useState([]);
+
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
 
-    // ================= LOAD DATA =================
+    // ==========================================
+    // Load Dashboard Data
+    // ==========================================
+
+    const loadDashboard = async () => {
+
+        try {
+
+            setLoading(true);
+            setError("");
+
+            // Get all assets
+            const assetResponse = await getAllAssets();
+
+            setAssets(assetResponse.data);
+
+
+            // Get dashboard summary
+            const summaryResponse = await getDashboardSummary();
+
+            setSummary(summaryResponse.data);
+
+
+            // Get open alerts
+            const alertResponse = await axiosClient.get(
+                "/alerts/open"
+            );
+
+            setAlerts(alertResponse.data);
+
+        } catch (err) {
+
+            console.error("Dashboard Error:", err);
+
+            setError(
+                err.response?.data?.message ||
+                "Unable to load dashboard data"
+            );
+
+        } finally {
+
+            setLoading(false);
+
+        }
+    };
+
+
+    // ==========================================
+    // Initial Load
+    // ==========================================
 
     useEffect(() => {
 
-        getDashboardSummary()
-            .then(res => setSummary(res.data))
-            .catch(error =>
-                console.error("Summary API Error:", error)
-            );
+        loadDashboard();
 
-        getAllAssets()
-            .then(res => setAssets(res.data))
-            .catch(error =>
-                console.error("Assets API Error:", error)
-            );
+        // Automatically refresh every 60 seconds
+        const interval = setInterval(() => {
+            loadDashboard();
+        }, 60000);
+
+        return () => clearInterval(interval);
 
     }, []);
 
 
-    // ================= LOADING =================
+    // ==========================================
+    // Loading Screen
+    // ==========================================
 
-    if (!summary) {
+    if (loading) {
 
         return (
             <Box
-                sx={{
-                    minHeight: '100vh',
-                    backgroundColor: '#0b1120',
-                    color: 'white',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center'
-                }}
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                minHeight="80vh"
             >
-                <Typography variant="h5">
-                    Loading SentinelCore...
-                </Typography>
+                <CircularProgress />
             </Box>
         );
 
     }
 
 
-    // ================= ASSET STATUS DATA =================
-
-    const onlineAssets =
-        assets.filter(asset => asset.status === "ONLINE").length;
-
-    const warningAssets =
-        assets.filter(asset => asset.status === "WARNING").length;
-
-    const criticalAssets =
-        assets.filter(asset => asset.status === "CRITICAL").length;
-
-
-    const statusData = [
-        {
-            name: "Online",
-            value: onlineAssets
-        },
-        {
-            name: "Warning",
-            value: warningAssets
-        },
-        {
-            name: "Critical",
-            value: criticalAssets
-        }
-    ];
-
-
-    // ================= RESOURCE DATA =================
-
-    const resourceData = assets.map(asset => ({
-        name: asset.assetName,
-        CPU: asset.cpuUsage || 0,
-        Memory: asset.memoryUsage || 0,
-        Disk: asset.disk || 0
-    }));
-
+    // ==========================================
+    // Dashboard UI
+    // ==========================================
 
     return (
 
         <Box
             sx={{
-                minHeight: '100vh',
-                backgroundColor: '#0b1120',
-                color: 'white',
-                padding: '30px'
+                padding: 4,
+                backgroundColor: "#f5f7fa",
+                minHeight: "100vh"
             }}
         >
 
-            {/* ================================================= */}
-            {/* HEADER */}
-            {/* ================================================= */}
+            {/* ================================= */}
+            {/* Header */}
+            {/* ================================= */}
 
             <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '30px'
-                }}
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={4}
             >
+
+                {/* Dashboard title */}
 
                 <Box>
 
                     <Typography
                         variant="h4"
-                        sx={{
-                            fontWeight: 'bold',
-                            color: '#38bdf8'
-                        }}
+                        fontWeight="bold"
                     >
-                        🛡 SentinelCore
+                        SentinelCore Dashboard
                     </Typography>
 
                     <Typography
                         variant="body1"
-                        sx={{
-                            color: '#94a3b8',
-                            marginTop: '5px'
-                        }}
+                        color="text.secondary"
                     >
-                        Enterprise Security Operations Dashboard
+                        Enterprise Security Operations Platform
                     </Typography>
 
                 </Box>
 
 
+                {/* Dashboard controls */}
+
+                <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
+                >
+
+                    {/* 
+                        Add Asset is displayed
+                        only for ROLE_ADMIN.
+                    */}
+
+                    <AssetControls />
+
+
+                    {/* Refresh */}
+
+                    <Button
+                        variant="contained"
+                        startIcon={<Refresh />}
+                        onClick={loadDashboard}
+                    >
+                        Refresh
+                    </Button>
+
+                </Box>
+
+            </Box>
+
+
+            {/* ================================= */}
+            {/* Error Message */}
+            {/* ================================= */}
+
+            {error && (
+
+                <Alert
+                    severity="error"
+                    sx={{ mb: 3 }}
+                >
+                    {error}
+                </Alert>
+
+            )}
+
+
+            {/* ================================= */}
+            {/* Summary Cards */}
+            {/* ================================= */}
+
+            <Grid
+                container
+                spacing={3}
+                mb={4}
+            >
+
+                {/* Total Assets */}
+
+                <Grid
+                    item
+                    xs={12}
+                    sm={6}
+                    md={3}
+                >
+
+                    <Card>
+
+                        <CardContent>
+
+                            <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={2}
+                            >
+
+                                <Computer />
+
+                                <Box>
+
+                                    <Typography
+                                        color="text.secondary"
+                                    >
+                                        Total Assets
+                                    </Typography>
+
+                                    <Typography
+                                        variant="h4"
+                                        fontWeight="bold"
+                                    >
+                                        {
+                                            summary?.totalAssets ??
+                                            assets.length
+                                        }
+                                    </Typography>
+
+                                </Box>
+
+                            </Box>
+
+                        </CardContent>
+
+                    </Card>
+
+                </Grid>
+
+
+                {/* Online Assets */}
+
+                <Grid
+                    item
+                    xs={12}
+                    sm={6}
+                    md={3}
+                >
+
+                    <Card>
+
+                        <CardContent>
+
+                            <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={2}
+                            >
+
+                                <CheckCircle />
+
+                                <Box>
+
+                                    <Typography
+                                        color="text.secondary"
+                                    >
+                                        Online Assets
+                                    </Typography>
+
+                                    <Typography
+                                        variant="h4"
+                                        fontWeight="bold"
+                                    >
+                                        {
+                                            summary?.onlineAssets ??
+                                            assets.filter(
+                                                asset =>
+                                                    asset.status ===
+                                                    "ONLINE"
+                                            ).length
+                                        }
+                                    </Typography>
+
+                                </Box>
+
+                            </Box>
+
+                        </CardContent>
+
+                    </Card>
+
+                </Grid>
+
+
+                {/* Warnings */}
+
+                <Grid
+                    item
+                    xs={12}
+                    sm={6}
+                    md={3}
+                >
+
+                    <Card>
+
+                        <CardContent>
+
+                            <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={2}
+                            >
+
+                                <Warning />
+
+                                <Box>
+
+                                    <Typography
+                                        color="text.secondary"
+                                    >
+                                        Warnings
+                                    </Typography>
+
+                                    <Typography
+                                        variant="h4"
+                                        fontWeight="bold"
+                                    >
+                                        {
+                                            summary?.warningAssets ??
+                                            assets.filter(
+                                                asset =>
+                                                    asset.status ===
+                                                    "WARNING"
+                                            ).length
+                                        }
+                                    </Typography>
+
+                                </Box>
+
+                            </Box>
+
+                        </CardContent>
+
+                    </Card>
+
+                </Grid>
+
+
+                {/* Critical Assets */}
+
+                <Grid
+                    item
+                    xs={12}
+                    sm={6}
+                    md={3}
+                >
+
+                    <Card>
+
+                        <CardContent>
+
+                            <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={2}
+                            >
+
+                                <ErrorOutlineOutlined />
+
+                                <Box>
+
+                                    <Typography
+                                        color="text.secondary"
+                                    >
+                                        Critical
+                                    </Typography>
+
+                                    <Typography
+                                        variant="h4"
+                                        fontWeight="bold"
+                                    >
+                                        {
+                                            summary?.criticalAssets ??
+                                            assets.filter(
+                                                asset =>
+                                                    asset.status ===
+                                                    "CRITICAL"
+                                            ).length
+                                        }
+                                    </Typography>
+
+                                </Box>
+
+                            </Box>
+
+                        </CardContent>
+
+                    </Card>
+
+                </Grid>
+
+            </Grid>
+
+
+            {/* ================================= */}
+            {/* System Health */}
+            {/* ================================= */}
+
+            <Typography
+                variant="h5"
+                fontWeight="bold"
+                mb={2}
+            >
+                System Health
+            </Typography>
+
+
+            <Grid
+                container
+                spacing={3}
+                mb={4}
+            >
+
+                {/* CPU */}
+
+                <Grid
+                    item
+                    xs={12}
+                    md={4}
+                >
+
+                    <Card>
+
+                        <CardContent>
+
+                            <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={2}
+                                mb={2}
+                            >
+
+                                <Memory />
+
+                                <Typography
+                                    variant="h6"
+                                    fontWeight="bold"
+                                >
+                                    CPU Usage
+                                </Typography>
+
+                            </Box>
+
+                            <Typography
+                                variant="h3"
+                                fontWeight="bold"
+                            >
+                                {
+                                    summary?.averageCpu ??
+                                    summary?.cpuUsage ??
+                                    0
+                                }%
+                            </Typography>
+
+                        </CardContent>
+
+                    </Card>
+
+                </Grid>
+
+
+                {/* Memory */}
+
+                <Grid
+                    item
+                    xs={12}
+                    md={4}
+                >
+
+                    <Card>
+
+                        <CardContent>
+
+                            <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={2}
+                                mb={2}
+                            >
+
+                                <Memory />
+
+                                <Typography
+                                    variant="h6"
+                                    fontWeight="bold"
+                                >
+                                    Memory Usage
+                                </Typography>
+
+                            </Box>
+
+                            <Typography
+                                variant="h3"
+                                fontWeight="bold"
+                            >
+                                {
+                                    summary?.averageMemory ??
+                                    summary?.memoryUsage ??
+                                    0
+                                }%
+                            </Typography>
+
+                        </CardContent>
+
+                    </Card>
+
+                </Grid>
+
+
+                {/* Disk */}
+
+                <Grid
+                    item
+                    xs={12}
+                    md={4}
+                >
+
+                    <Card>
+
+                        <CardContent>
+
+                            <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={2}
+                                mb={2}
+                            >
+
+                                <Storage />
+
+                                <Typography
+                                    variant="h6"
+                                    fontWeight="bold"
+                                >
+                                    Disk Usage
+                                </Typography>
+
+                            </Box>
+
+                            <Typography
+                                variant="h3"
+                                fontWeight="bold"
+                            >
+                                {
+                                    summary?.averageDisk ??
+                                    summary?.diskUsage ??
+                                    0
+                                }%
+                            </Typography>
+
+                        </CardContent>
+
+                    </Card>
+
+                </Grid>
+
+            </Grid>
+
+
+            {/* ================================= */}
+            {/* Open Alerts Header */}
+            {/* ================================= */}
+
+            <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+            >
+
+                <Typography
+                    variant="h5"
+                    fontWeight="bold"
+                >
+                    Open Alerts
+                </Typography>
+
                 <Chip
-                    label="SYSTEM ONLINE"
-                    sx={{
-                        backgroundColor: '#064e3b',
-                        color: '#4ade80',
-                        fontWeight: 'bold',
-                        border: '1px solid #22c55e'
-                    }}
+                    label={`${alerts.length} Open`}
+                    icon={<ErrorOutlineOutlined />}
                 />
 
             </Box>
 
 
-            {/* ================================================= */}
-            {/* SECTION 1 — KEY METRICS */}
-            {/* ================================================= */}
+            {/* ================================= */}
+            {/* Alerts */}
+            {/* ================================= */}
 
-            <Typography
-                variant="h6"
-                sx={{
-                    color: '#94a3b8',
-                    marginBottom: '15px'
-                }}
-            >
-                System Overview
-            </Typography>
+            {alerts.length === 0 ? (
 
+                <Card>
 
-            <Grid container spacing={3}>
+                    <CardContent>
 
-                {/* TOTAL ASSETS */}
+                        <Typography
+                            color="text.secondary"
+                        >
+                            No open alerts. All monitored assets
+                            are operating normally.
+                        </Typography>
 
-                <Grid item xs={12} sm={6} md={3}>
+                    </CardContent>
 
-                    <Card
-                        sx={{
-                            backgroundColor: '#111827',
-                            color: 'white',
-                            border: '1px solid #1e3a5f',
-                            borderRadius: '15px'
-                        }}
-                    >
+                </Card>
 
-                        <CardContent>
+            ) : (
 
-                            <Typography sx={{ color: '#94a3b8' }}>
-                                TOTAL ASSETS
-                            </Typography>
+                <Grid
+                    container
+                    spacing={2}
+                >
 
-                            <Typography
-                                variant="h3"
-                                sx={{
-                                    color: '#38bdf8',
-                                    fontWeight: 'bold'
-                                }}
-                            >
-                                {summary.totalAssets}
-                            </Typography>
+                    {alerts.map((alert) => (
 
-                            <Typography sx={{ color: '#64748b' }}>
-                                Monitored infrastructure
-                            </Typography>
-
-                        </CardContent>
-
-                    </Card>
-
-                </Grid>
-
-
-                {/* UPTIME */}
-
-                <Grid item xs={12} sm={6} md={3}>
-
-                    <Card
-                        sx={{
-                            backgroundColor: '#111827',
-                            color: 'white',
-                            border: '1px solid #14532d',
-                            borderRadius: '15px'
-                        }}
-                    >
-
-                        <CardContent>
-
-                            <Typography sx={{ color: '#94a3b8' }}>
-                                SYSTEM UPTIME
-                            </Typography>
-
-                            <Typography
-                                variant="h3"
-                                sx={{
-                                    color: '#4ade80',
-                                    fontWeight: 'bold'
-                                }}
-                            >
-                                {summary.uptimePercentage.toFixed(2)}%
-                            </Typography>
-
-                            <Typography sx={{ color: '#64748b' }}>
-                                Infrastructure health
-                            </Typography>
-
-                        </CardContent>
-
-                    </Card>
-
-                </Grid>
-
-
-                {/* CPU */}
-
-                <Grid item xs={12} sm={6} md={3}>
-
-                    <Card
-                        sx={{
-                            backgroundColor: '#111827',
-                            color: 'white',
-                            border: '1px solid #713f12',
-                            borderRadius: '15px'
-                        }}
-                    >
-
-                        <CardContent>
-
-                            <Typography sx={{ color: '#94a3b8' }}>
-                                AVG CPU USAGE
-                            </Typography>
-
-                            <Typography
-                                variant="h3"
-                                sx={{
-                                    color: '#facc15',
-                                    fontWeight: 'bold'
-                                }}
-                            >
-                                {summary.avgCpuUsage.toFixed(1)}%
-                            </Typography>
-
-                            <LinearProgress
-                                variant="determinate"
-                                value={summary.avgCpuUsage}
-                                sx={{ marginTop: 2 }}
-                            />
-
-                        </CardContent>
-
-                    </Card>
-
-                </Grid>
-
-
-                {/* ALERTS */}
-
-                <Grid item xs={12} sm={6} md={3}>
-
-                    <Card
-                        sx={{
-                            backgroundColor: '#111827',
-                            color: 'white',
-                            border: '1px solid #7f1d1d',
-                            borderRadius: '15px'
-                        }}
-                    >
-
-                        <CardContent>
-
-                            <Typography sx={{ color: '#94a3b8' }}>
-                                CRITICAL ALERTS
-                            </Typography>
-
-                            <Typography
-                                variant="h3"
-                                sx={{
-                                    color: '#f87171',
-                                    fontWeight: 'bold'
-                                }}
-                            >
-                                {summary.criticalAlerts}
-                            </Typography>
-
-                            <Typography sx={{ color: '#64748b' }}>
-                                Requires attention
-                            </Typography>
-
-                        </CardContent>
-
-                    </Card>
-
-                </Grid>
-
-            </Grid>
-
-
-            {/* ================================================= */}
-            {/* SECTION 2 — ASSET STATUS */}
-            {/* ================================================= */}
-
-            <Typography
-                variant="h6"
-                sx={{
-                    color: '#94a3b8',
-                    marginTop: '40px',
-                    marginBottom: '15px'
-                }}
-            >
-                Asset Health
-            </Typography>
-
-
-            <Grid container spacing={3}>
-
-                {/* STATUS CHART */}
-
-                <Grid item xs={12} md={5}>
-
-                    <Card
-                        sx={{
-                            backgroundColor: '#111827',
-                            color: 'white',
-                            borderRadius: '15px',
-                            border: '1px solid #1e3a5f'
-                        }}
-                    >
-
-                        <CardContent>
-
-                            <Typography
-                                variant="h6"
-                                sx={{ color: '#38bdf8' }}
-                            >
-                                Asset Status
-                            </Typography>
-
-                            <ResponsiveContainer
-                                width="100%"
-                                height={280}
-                            >
-
-                                <PieChart>
-
-                                    <Pie
-                                        data={statusData}
-                                        dataKey="value"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        outerRadius={90}
-                                        label
-                                    >
-
-                                        <Cell fill="#22c55e" />
-                                        <Cell fill="#facc15" />
-                                        <Cell fill="#ef4444" />
-
-                                    </Pie>
-
-                                    <Tooltip />
-
-                                </PieChart>
-
-                            </ResponsiveContainer>
-
-                        </CardContent>
-
-                    </Card>
-
-                </Grid>
-
-
-                {/* STATUS SUMMARY */}
-
-                <Grid item xs={12} md={7}>
-
-                    <Card
-                        sx={{
-                            backgroundColor: '#111827',
-                            color: 'white',
-                            borderRadius: '15px',
-                            border: '1px solid #1e3a5f'
-                        }}
-                    >
-
-                        <CardContent>
-
-                            <Typography
-                                variant="h6"
-                                sx={{ color: '#38bdf8' }}
-                            >
-                                Current Asset Health
-                            </Typography>
-
-
-                            <Box sx={{ marginTop: 3 }}>
-
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        marginBottom: 1
-                                    }}
-                                >
-                                    <Typography>
-                                        Online
-                                    </Typography>
-
-                                    <Typography sx={{ color: '#4ade80' }}>
-                                        {onlineAssets}
-                                    </Typography>
-                                </Box>
-
-                                <LinearProgress
-                                    variant="determinate"
-                                    value={
-                                        summary.totalAssets
-                                            ? (onlineAssets /
-                                                summary.totalAssets) * 100
-                                            : 0
-                                    }
-                                    sx={{ marginBottom: 3 }}
-                                />
-
-
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        marginBottom: 1
-                                    }}
-                                >
-                                    <Typography>
-                                        Warning
-                                    </Typography>
-
-                                    <Typography sx={{ color: '#facc15' }}>
-                                        {warningAssets}
-                                    </Typography>
-                                </Box>
-
-                                <LinearProgress
-                                    variant="determinate"
-                                    value={
-                                        summary.totalAssets
-                                            ? (warningAssets /
-                                                summary.totalAssets) * 100
-                                            : 0
-                                    }
-                                    sx={{ marginBottom: 3 }}
-                                />
-
-
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        marginBottom: 1
-                                    }}
-                                >
-                                    <Typography>
-                                        Critical
-                                    </Typography>
-
-                                    <Typography sx={{ color: '#f87171' }}>
-                                        {criticalAssets}
-                                    </Typography>
-                                </Box>
-
-                                <LinearProgress
-                                    variant="determinate"
-                                    value={
-                                        summary.totalAssets
-                                            ? (criticalAssets /
-                                                summary.totalAssets) * 100
-                                            : 0
-                                    }
-                                />
-
-                            </Box>
-
-                        </CardContent>
-
-                    </Card>
-
-                </Grid>
-
-            </Grid>
-
-
-            {/* ================================================= */}
-            {/* SECTION 3 — RESOURCE MONITORING */}
-            {/* ================================================= */}
-
-            <Typography
-                variant="h6"
-                sx={{
-                    color: '#94a3b8',
-                    marginTop: '40px',
-                    marginBottom: '15px'
-                }}
-            >
-                Infrastructure Resource Monitoring
-            </Typography>
-
-
-            <Card
-                sx={{
-                    backgroundColor: '#111827',
-                    color: 'white',
-                    border: '1px solid #1e3a5f',
-                    borderRadius: '15px'
-                }}
-            >
-
-                <CardContent>
-
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            color: '#38bdf8',
-                            marginBottom: 2
-                        }}
-                    >
-                        CPU / Memory / Disk Usage
-                    </Typography>
-
-
-                    <ResponsiveContainer
-                        width="100%"
-                        height={350}
-                    >
-
-                        <BarChart data={resourceData}>
-
-                            <CartesianGrid
-                                strokeDasharray="3 3"
-                                stroke="#1e293b"
-                            />
-
-                            <XAxis
-                                dataKey="name"
-                                stroke="#64748b"
-                            />
-
-                            <YAxis
-                                stroke="#64748b"
-                            />
-
-                            <Tooltip />
-
-                            <Bar
-                                dataKey="CPU"
-                                fill="#38bdf8"
-                            />
-
-                            <Bar
-                                dataKey="Memory"
-                                fill="#a78bfa"
-                            />
-
-                            <Bar
-                                dataKey="Disk"
-                                fill="#facc15"
-                            />
-
-                        </BarChart>
-
-                    </ResponsiveContainer>
-
-                </CardContent>
-
-            </Card>
-
-
-            {/* ================================================= */}
-            {/* SECTION 4 — CPU MONITORING */}
-            {/* ================================================= */}
-
-            <Typography
-                variant="h6"
-                sx={{
-                    color: '#94a3b8',
-                    marginTop: '40px',
-                    marginBottom: '15px'
-                }}
-            >
-                Performance Monitoring
-            </Typography>
-
-
-            <Card
-                sx={{
-                    backgroundColor: '#111827',
-                    color: 'white',
-                    border: '1px solid #1e3a5f',
-                    borderRadius: '15px'
-                }}
-            >
-
-                <CardContent>
-
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            color: '#38bdf8',
-                            fontWeight: 'bold'
-                        }}
-                    >
-                        CPU Usage Monitoring
-                    </Typography>
-
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: '#64748b',
-                            marginBottom: 3
-                        }}
-                    >
-                        CPU utilization across monitored assets
-                    </Typography>
-
-
-                    <Box
-                        sx={{
-                            width: '100%',
-                            height: '350px'
-                        }}
-                    >
-
-                        <ResponsiveContainer
-                            width="100%"
-                            height="100%"
+                        <Grid
+                            item
+                            xs={12}
+                            md={6}
+                            key={alert.id}
                         >
 
-                            <LineChart data={assets}>
+                            <Card>
 
-                                <XAxis
-                                    dataKey="assetName"
-                                    stroke="#64748b"
-                                />
+                                <CardContent>
 
-                                <YAxis
-                                    stroke="#64748b"
-                                />
+                                    <Box
+                                        display="flex"
+                                        justifyContent="space-between"
+                                        alignItems="center"
+                                        mb={1}
+                                    >
 
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: '#020617',
-                                        border: '1px solid #38bdf8',
-                                        borderRadius: '8px',
-                                        color: 'white'
-                                    }}
-                                />
-
-                                <Line
-                                    type="monotone"
-                                    dataKey="cpuUsage"
-                                    stroke="#38bdf8"
-                                    strokeWidth={3}
-                                    dot={{ r: 5 }}
-                                    activeDot={{ r: 8 }}
-                                />
-
-                            </LineChart>
-
-                        </ResponsiveContainer>
-
-                    </Box>
-
-                </CardContent>
-
-            </Card>
+                                        <Typography
+                                            variant="h6"
+                                            fontWeight="bold"
+                                        >
+                                            Alert #{alert.id}
+                                        </Typography>
 
 
-            {/* ================================================= */}
-            {/* SECTION 5 — RECENT ASSETS */}
-            {/* ================================================= */}
+                                        <Chip
+                                            label={alert.severity}
+                                            color={
+                                                alert.severity ===
+                                                "CRITICAL"
+                                                    ? "error"
+                                                    : "warning"
+                                            }
+                                        />
 
-            <Typography
-                variant="h6"
-                sx={{
-                    color: '#94a3b8',
-                    marginTop: '40px',
-                    marginBottom: '15px'
-                }}
-            >
-                Monitored Assets
-            </Typography>
+                                    </Box>
 
-
-            <Card
-                sx={{
-                    backgroundColor: '#111827',
-                    color: 'white',
-                    border: '1px solid #1e3a5f',
-                    borderRadius: '15px'
-                }}
-            >
-
-                <CardContent>
-
-                    {assets.map((asset) => (
-
-                        <Box key={asset.id}>
-
-                            <Box
-                                sx={{
-                                    display: 'grid',
-                                    gridTemplateColumns:
-                                        '2fr 1fr 1fr 1fr',
-                                    gap: 2,
-                                    padding: 2,
-                                    alignItems: 'center'
-                                }}
-                            >
-
-                                <Box>
 
                                     <Typography
-                                        sx={{
-                                            color: 'white',
-                                            fontWeight: 'bold'
-                                        }}
+                                        variant="body1"
+                                        mb={1}
                                     >
-                                        {asset.assetName}
+                                        {alert.message}
                                     </Typography>
+
 
                                     <Typography
-                                        variant="caption"
-                                        sx={{ color: '#64748b' }}
+                                        variant="body2"
+                                        color="text.secondary"
                                     >
-                                        {asset.assetType}
+                                        Asset ID: {alert.assetId}
                                     </Typography>
 
-                                </Box>
 
+                                    {alert.createdAt && (
 
-                                <Typography
-                                    sx={{ color: '#94a3b8' }}
-                                >
-                                    CPU: {asset.cpuUsage}%
-                                </Typography>
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                        >
+                                            Created:{" "}
+                                            {new Date(
+                                                alert.createdAt
+                                            ).toLocaleString()}
+                                        </Typography>
 
+                                    )}
 
-                                <Typography
-                                    sx={{ color: '#94a3b8' }}
-                                >
-                                    Memory: {asset.memoryUsage}%
-                                </Typography>
+                                </CardContent>
 
+                            </Card>
 
-                                <Chip
-                                    label={asset.status}
-                                    size="small"
-                                    sx={{
-                                        backgroundColor:
-                                            asset.status === "ONLINE"
-                                                ? '#064e3b'
-                                                : asset.status === "WARNING"
-                                                    ? '#713f12'
-                                                    : '#7f1d1d',
-
-                                        color:
-                                            asset.status === "ONLINE"
-                                                ? '#4ade80'
-                                                : asset.status === "WARNING"
-                                                    ? '#facc15'
-                                                    : '#f87171'
-                                    }}
-                                />
-
-                            </Box>
-
-                            <Divider
-                                sx={{
-                                    borderColor: '#1e293b'
-                                }}
-                            />
-
-                        </Box>
+                        </Grid>
 
                     ))}
 
-                </CardContent>
+                </Grid>
 
-            </Card>
-
-
-            {/* ================================================= */}
-            {/* FOOTER */}
-            {/* ================================================= */}
-
-            <Box
-                sx={{
-                    marginTop: '40px',
-                    textAlign: 'center',
-                    color: '#475569'
-                }}
-            >
-
-                <Typography variant="body2">
-                    SentinelCore Enterprise Security Operations Platform
-                </Typography>
-
-                <Typography variant="caption">
-                    Monitoring infrastructure • Security • Alerts
-                </Typography>
-
-            </Box>
+            )}
 
         </Box>
     );

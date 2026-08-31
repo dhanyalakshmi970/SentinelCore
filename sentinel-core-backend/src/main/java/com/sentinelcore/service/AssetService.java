@@ -6,7 +6,9 @@ import com.sentinelcore.dto.AssetDTO;
 import com.sentinelcore.dto.DashboardSummaryDTO;
 import com.sentinelcore.entity.Asset;
 import com.sentinelcore.repository.AssetRepository;
+import com.sentinelcore.repository.AssetSpecification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -104,5 +106,21 @@ public class AssetService {
                 .networkUsage(asset.getNetworkUsage())
                 .status(asset.getStatus().name())
                 .build();
+    }
+
+    public List<Asset> searchAndFilter(
+            String search,
+            String status,
+            String risk
+    ) {
+
+        Specification<Asset> specification =
+                AssetSpecification.searchAssets(
+                        search,
+                        status,
+                        risk
+                );
+
+        return assetRepository.findAll(specification);
     }
 }

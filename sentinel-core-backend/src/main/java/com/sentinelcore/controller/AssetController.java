@@ -3,8 +3,11 @@ package com.sentinelcore.controller;
 
 import com.sentinelcore.dto.AssetDTO;
 import com.sentinelcore.dto.DashboardSummaryDTO;
+import com.sentinelcore.entity.Asset;
 import com.sentinelcore.service.AssetService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +31,7 @@ public class AssetController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public AssetDTO createAsset(@RequestBody AssetDTO dto) {
         return assetService.createAsset(dto);
     }
@@ -35,5 +39,28 @@ public class AssetController {
     @GetMapping("/dashboard/summary")
     public DashboardSummaryDTO getDashboardSummary() {
         return assetService.getDashboardSummary();
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Asset>> searchAssets(
+
+            @RequestParam(required = false)
+            String search,
+
+            @RequestParam(required = false)
+            String status,
+
+            @RequestParam(required = false)
+            String risk
+    ) {
+
+        List<Asset> assets =
+                assetService.searchAndFilter(
+                        search,
+                        status,
+                        risk
+                );
+
+        return ResponseEntity.ok(assets);
     }
 }

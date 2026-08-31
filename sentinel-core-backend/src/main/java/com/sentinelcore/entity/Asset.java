@@ -32,6 +32,9 @@ public class Asset {
 
     private Double networkUsage;
 
+    @Column(name = "risk")
+    private String risk;
+
     @Enumerated(EnumType.STRING)
     private AssetStatus status;
 

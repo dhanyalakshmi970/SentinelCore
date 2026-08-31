@@ -1,8 +1,9 @@
-import axios from 'axios';
+import axiosClient from "./axiosClient";
 
-const API_BASE = 'http://localhost:8080/api/assets';
+export const getAllAssets = () => {
+    return axiosClient.get("/api/assets");
+};
 
-export const getAllAssets = () => axios.get(API_BASE);
-
-export const getDashboardSummary = () =>
-    axios.get(`${API_BASE}/dashboard/summary`);
+export const getDashboardSummary = () => {
+    return axiosClient.get("/api/assets/dashboard/summary");
+};
