@@ -9,13 +9,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class TwilioSmsService {
 
-    @Value("${twilio.account-sid}")
+    @Value("${twilio.account-sid:}")
     private String accountSid;
 
-    @Value("${twilio.auth-token}")
+    @Value("${twilio.auth-token:}")
     private String authToken;
 
-    @Value("${twilio.phone-number}")
+    @Value("${twilio.phone-number:}")
     private String twilioPhoneNumber;
 
     public String sendSms(String to, String messageText) {

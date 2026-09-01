@@ -6,7 +6,6 @@ import {
     CardContent,
     Typography,
     Grid,
-    Chip,
     Alert,
     CircularProgress,
     Button
@@ -27,8 +26,6 @@ import {
     getDashboardSummary
 } from "../api/assetApi";
 
-import axiosClient from "../api/axiosClient";
-
 import AssetControls from "./AssetControls";
 
 
@@ -36,16 +33,12 @@ function Dashboard() {
 
     const [assets, setAssets] = useState([]);
     const [summary, setSummary] = useState(null);
-    const [alerts, setAlerts] = useState([]);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
 
-    // ==========================================
     // Load Dashboard Data
-    // ==========================================
-
     const loadDashboard = async () => {
 
         try {
@@ -55,22 +48,11 @@ function Dashboard() {
 
             // Get all assets
             const assetResponse = await getAllAssets();
-
             setAssets(assetResponse.data);
-
 
             // Get dashboard summary
             const summaryResponse = await getDashboardSummary();
-
             setSummary(summaryResponse.data);
-
-
-            // Get open alerts
-            const alertResponse = await axiosClient.get(
-                "/alerts/open"
-            );
-
-            setAlerts(alertResponse.data);
 
         } catch (err) {
 
@@ -89,15 +71,11 @@ function Dashboard() {
     };
 
 
-    // ==========================================
     // Initial Load
-    // ==========================================
-
     useEffect(() => {
 
         loadDashboard();
 
-        // Automatically refresh every 60 seconds
         const interval = setInterval(() => {
             loadDashboard();
         }, 60000);
@@ -107,10 +85,7 @@ function Dashboard() {
     }, []);
 
 
-    // ==========================================
     // Loading Screen
-    // ==========================================
-
     if (loading) {
 
         return (
@@ -127,10 +102,6 @@ function Dashboard() {
     }
 
 
-    // ==========================================
-    // Dashboard UI
-    // ==========================================
-
     return (
 
         <Box
@@ -141,9 +112,7 @@ function Dashboard() {
             }}
         >
 
-            {/* ================================= */}
             {/* Header */}
-            {/* ================================= */}
 
             <Box
                 display="flex"
@@ -151,8 +120,6 @@ function Dashboard() {
                 alignItems="center"
                 mb={4}
             >
-
-                {/* Dashboard title */}
 
                 <Box>
 
@@ -173,23 +140,13 @@ function Dashboard() {
                 </Box>
 
 
-                {/* Dashboard controls */}
-
                 <Box
                     display="flex"
                     alignItems="center"
                     gap={2}
                 >
 
-                    {/* 
-                        Add Asset is displayed
-                        only for ROLE_ADMIN.
-                    */}
-
                     <AssetControls />
-
-
-                    {/* Refresh */}
 
                     <Button
                         variant="contained"
@@ -204,9 +161,7 @@ function Dashboard() {
             </Box>
 
 
-            {/* ================================= */}
-            {/* Error Message */}
-            {/* ================================= */}
+            {/* Error */}
 
             {error && (
 
@@ -220,9 +175,7 @@ function Dashboard() {
             )}
 
 
-            {/* ================================= */}
             {/* Summary Cards */}
-            {/* ================================= */}
 
             <Grid
                 container
@@ -232,12 +185,7 @@ function Dashboard() {
 
                 {/* Total Assets */}
 
-                <Grid
-                    item
-                    xs={12}
-                    sm={6}
-                    md={3}
-                >
+                <Grid item xs={12} sm={6} md={3}>
 
                     <Card>
 
@@ -253,9 +201,7 @@ function Dashboard() {
 
                                 <Box>
 
-                                    <Typography
-                                        color="text.secondary"
-                                    >
+                                    <Typography color="text.secondary">
                                         Total Assets
                                     </Typography>
 
@@ -282,12 +228,7 @@ function Dashboard() {
 
                 {/* Online Assets */}
 
-                <Grid
-                    item
-                    xs={12}
-                    sm={6}
-                    md={3}
-                >
+                <Grid item xs={12} sm={6} md={3}>
 
                     <Card>
 
@@ -303,9 +244,7 @@ function Dashboard() {
 
                                 <Box>
 
-                                    <Typography
-                                        color="text.secondary"
-                                    >
+                                    <Typography color="text.secondary">
                                         Online Assets
                                     </Typography>
 
@@ -317,8 +256,7 @@ function Dashboard() {
                                             summary?.onlineAssets ??
                                             assets.filter(
                                                 asset =>
-                                                    asset.status ===
-                                                    "ONLINE"
+                                                    asset.status === "ONLINE"
                                             ).length
                                         }
                                     </Typography>
@@ -336,12 +274,7 @@ function Dashboard() {
 
                 {/* Warnings */}
 
-                <Grid
-                    item
-                    xs={12}
-                    sm={6}
-                    md={3}
-                >
+                <Grid item xs={12} sm={6} md={3}>
 
                     <Card>
 
@@ -357,9 +290,7 @@ function Dashboard() {
 
                                 <Box>
 
-                                    <Typography
-                                        color="text.secondary"
-                                    >
+                                    <Typography color="text.secondary">
                                         Warnings
                                     </Typography>
 
@@ -371,8 +302,7 @@ function Dashboard() {
                                             summary?.warningAssets ??
                                             assets.filter(
                                                 asset =>
-                                                    asset.status ===
-                                                    "WARNING"
+                                                    asset.status === "WARNING"
                                             ).length
                                         }
                                     </Typography>
@@ -388,14 +318,9 @@ function Dashboard() {
                 </Grid>
 
 
-                {/* Critical Assets */}
+                {/* Critical */}
 
-                <Grid
-                    item
-                    xs={12}
-                    sm={6}
-                    md={3}
-                >
+                <Grid item xs={12} sm={6} md={3}>
 
                     <Card>
 
@@ -411,9 +336,7 @@ function Dashboard() {
 
                                 <Box>
 
-                                    <Typography
-                                        color="text.secondary"
-                                    >
+                                    <Typography color="text.secondary">
                                         Critical
                                     </Typography>
 
@@ -422,11 +345,10 @@ function Dashboard() {
                                         fontWeight="bold"
                                     >
                                         {
-                                            summary?.criticalAssets ??
+                                            summary?.criticalAlerts ??
                                             assets.filter(
                                                 asset =>
-                                                    asset.status ===
-                                                    "CRITICAL"
+                                                    asset.status === "CRITICAL"
                                             ).length
                                         }
                                     </Typography>
@@ -444,9 +366,7 @@ function Dashboard() {
             </Grid>
 
 
-            {/* ================================= */}
             {/* System Health */}
-            {/* ================================= */}
 
             <Typography
                 variant="h5"
@@ -465,11 +385,7 @@ function Dashboard() {
 
                 {/* CPU */}
 
-                <Grid
-                    item
-                    xs={12}
-                    md={4}
-                >
+                <Grid item xs={12} md={4}>
 
                     <Card>
 
@@ -498,9 +414,9 @@ function Dashboard() {
                                 fontWeight="bold"
                             >
                                 {
-                                    summary?.averageCpu ??
-                                    summary?.cpuUsage ??
-                                    0
+                                    summary?.avgCpuUsage != null
+                                        ? summary.avgCpuUsage.toFixed(1)
+                                        : "0.0"
                                 }%
                             </Typography>
 
@@ -513,11 +429,7 @@ function Dashboard() {
 
                 {/* Memory */}
 
-                <Grid
-                    item
-                    xs={12}
-                    md={4}
-                >
+                <Grid item xs={12} md={4}>
 
                     <Card>
 
@@ -546,9 +458,9 @@ function Dashboard() {
                                 fontWeight="bold"
                             >
                                 {
-                                    summary?.averageMemory ??
-                                    summary?.memoryUsage ??
-                                    0
+                                    summary?.avgMemoryUsage != null
+                                        ? summary.avgMemoryUsage.toFixed(1)
+                                        : "0.0"
                                 }%
                             </Typography>
 
@@ -561,11 +473,7 @@ function Dashboard() {
 
                 {/* Disk */}
 
-                <Grid
-                    item
-                    xs={12}
-                    md={4}
-                >
+                <Grid item xs={12} md={4}>
 
                     <Card>
 
@@ -594,9 +502,9 @@ function Dashboard() {
                                 fontWeight="bold"
                             >
                                 {
-                                    summary?.averageDisk ??
-                                    summary?.diskUsage ??
-                                    0
+                                    summary?.avgDiskUsage != null
+                                        ? summary.avgDiskUsage.toFixed(1)
+                                        : "0.0"
                                 }%
                             </Typography>
 
@@ -608,146 +516,10 @@ function Dashboard() {
 
             </Grid>
 
-
-            {/* ================================= */}
-            {/* Open Alerts Header */}
-            {/* ================================= */}
-
-            <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-            >
-
-                <Typography
-                    variant="h5"
-                    fontWeight="bold"
-                >
-                    Open Alerts
-                </Typography>
-
-                <Chip
-                    label={`${alerts.length} Open`}
-                    icon={<ErrorOutlineOutlined />}
-                />
-
-            </Box>
-
-
-            {/* ================================= */}
-            {/* Alerts */}
-            {/* ================================= */}
-
-            {alerts.length === 0 ? (
-
-                <Card>
-
-                    <CardContent>
-
-                        <Typography
-                            color="text.secondary"
-                        >
-                            No open alerts. All monitored assets
-                            are operating normally.
-                        </Typography>
-
-                    </CardContent>
-
-                </Card>
-
-            ) : (
-
-                <Grid
-                    container
-                    spacing={2}
-                >
-
-                    {alerts.map((alert) => (
-
-                        <Grid
-                            item
-                            xs={12}
-                            md={6}
-                            key={alert.id}
-                        >
-
-                            <Card>
-
-                                <CardContent>
-
-                                    <Box
-                                        display="flex"
-                                        justifyContent="space-between"
-                                        alignItems="center"
-                                        mb={1}
-                                    >
-
-                                        <Typography
-                                            variant="h6"
-                                            fontWeight="bold"
-                                        >
-                                            Alert #{alert.id}
-                                        </Typography>
-
-
-                                        <Chip
-                                            label={alert.severity}
-                                            color={
-                                                alert.severity ===
-                                                "CRITICAL"
-                                                    ? "error"
-                                                    : "warning"
-                                            }
-                                        />
-
-                                    </Box>
-
-
-                                    <Typography
-                                        variant="body1"
-                                        mb={1}
-                                    >
-                                        {alert.message}
-                                    </Typography>
-
-
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                    >
-                                        Asset ID: {alert.assetId}
-                                    </Typography>
-
-
-                                    {alert.createdAt && (
-
-                                        <Typography
-                                            variant="body2"
-                                            color="text.secondary"
-                                        >
-                                            Created:{" "}
-                                            {new Date(
-                                                alert.createdAt
-                                            ).toLocaleString()}
-                                        </Typography>
-
-                                    )}
-
-                                </CardContent>
-
-                            </Card>
-
-                        </Grid>
-
-                    ))}
-
-                </Grid>
-
-            )}
-
         </Box>
+
     );
+
 }
 
 

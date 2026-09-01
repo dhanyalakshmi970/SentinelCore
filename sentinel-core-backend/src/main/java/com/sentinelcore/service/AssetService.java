@@ -69,12 +69,23 @@ public class AssetService {
                 .count();
 
         double avgCpu = all.stream()
-                .mapToDouble(Asset::getCpuUsage)
+                .map(Asset::getCpuUsage)
+                .filter(java.util.Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
                 .average()
                 .orElse(0);
 
         double avgMem = all.stream()
-                .mapToDouble(Asset::getMemoryUsage)
+                .map(Asset::getMemoryUsage)
+                .filter(java.util.Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0);
+
+        double avgDisk = all.stream()
+                .map(Asset::getDiskUsage)
+                .filter(java.util.Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
                 .average()
                 .orElse(0);
 
@@ -90,9 +101,9 @@ public class AssetService {
                 .criticalAlerts(critical)
                 .avgCpuUsage(avgCpu)
                 .avgMemoryUsage(avgMem)
+                .avgDiskUsage(avgDisk)
                 .build();
     }
-
     private AssetDTO toDTO(Asset asset) {
 
         return AssetDTO.builder()
