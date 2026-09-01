@@ -14,15 +14,33 @@ import {
 } from "@mui/material";
 
 
-function Login({ onLoginSuccess }) {
-
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
+function Login() {
 
 
-    const { loginUser } = useAuth();
+    const [username, setUsername] =
+        useState("");
 
+
+    const [password, setPassword] =
+        useState("");
+
+
+    const [error, setError] =
+        useState("");
+
+
+    const [loading, setLoading] =
+        useState(false);
+
+
+    const {
+        loginUser
+    } = useAuth();
+
+
+    // ==========================================
+    // Login Submit
+    // ==========================================
 
     const handleSubmit = async (e) => {
 
@@ -30,41 +48,42 @@ function Login({ onLoginSuccess }) {
 
         setError("");
 
+        setLoading(true);
+
+
         try {
 
-            const res = await login(
-                username,
-                password
-            );
+            const res =
+                await login(
+                    username,
+                    password
+                );
+
 
             const accessToken =
                 res.data.accessToken;
+
 
             const refreshToken =
                 res.data.refreshToken;
 
 
-            // Save tokens
-            localStorage.setItem(
-                "accessToken",
-                accessToken
-            );
+            if (!accessToken) {
 
-            localStorage.setItem(
-                "refreshToken",
-                refreshToken
-            );
+                throw new Error(
+                    "Access token not received"
+                );
+
+            }
 
 
-            // Store user authentication information
+            // Store authentication
+
             loginUser(
                 accessToken,
                 refreshToken
             );
 
-
-            // Tell App.jsx login was successful
-            onLoginSuccess();
 
         } catch (err) {
 
@@ -73,18 +92,25 @@ function Login({ onLoginSuccess }) {
                 err
             );
 
+
             setError(
                 err.response?.data?.message ||
                 "Invalid username or password"
             );
+
+        } finally {
+
+            setLoading(false);
+
         }
+
     };
 
 
     return (
 
         <Card
-            style={{
+            sx={{
                 maxWidth: 400,
                 margin: "100px auto"
             }}
@@ -102,14 +128,22 @@ function Login({ onLoginSuccess }) {
 
                 {error && (
 
-                    <Alert severity="error">
+                    <Alert
+                        severity="error"
+                        sx={{ mb: 2 }}
+                    >
                         {error}
                     </Alert>
 
                 )}
 
 
-                <form onSubmit={handleSubmit}>
+                <form
+                    onSubmit={handleSubmit}
+                >
+
+
+                    {/* Username */}
 
                     <TextField
                         fullWidth
@@ -117,10 +151,15 @@ function Login({ onLoginSuccess }) {
                         label="Username"
                         value={username}
                         onChange={(e) =>
-                            setUsername(e.target.value)
+                            setUsername(
+                                e.target.value
+                            )
                         }
+                        required
                     />
 
+
+                    {/* Password */}
 
                     <TextField
                         fullWidth
@@ -129,28 +168,39 @@ function Login({ onLoginSuccess }) {
                         type="password"
                         value={password}
                         onChange={(e) =>
-                            setPassword(e.target.value)
+                            setPassword(
+                                e.target.value
+                            )
                         }
+                        required
                     />
 
+
+                    {/* Login */}
 
                     <Button
                         fullWidth
                         variant="contained"
                         type="submit"
-                        style={{
-                            marginTop: 16
+                        disabled={loading}
+                        sx={{
+                            marginTop: 2
                         }}
                     >
-                        Log In
+                        {loading
+                            ? "Logging in..."
+                            : "Log In"}
                     </Button>
+
 
                 </form>
 
             </CardContent>
 
         </Card>
+
     );
+
 }
 
 
