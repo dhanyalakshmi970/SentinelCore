@@ -17,9 +17,11 @@ axiosClient.interceptors.request.use(
 
         if (accessToken) {
 
+            config.headers =
+                config.headers || {};
+
             config.headers.Authorization =
                 `Bearer ${accessToken}`;
-
         }
 
         return config;
@@ -41,54 +43,126 @@ axiosClient.interceptors.response.use(
 
     async (error) => {
 
-        const originalRequest = error.config;
+        const originalRequest =
+            error.config;
 
-        // If access token expired
+
+        // No response from backend
+        if (!error.response) {
+
+            return Promise.reject(error);
+        }
+
+
+        // ======================================
+        // Don't refresh login/refresh endpoints
+        // ======================================
+
         if (
-            (error.response?.status === 401 ||
-                error.response?.status === 403) &&
+            originalRequest?.url?.includes(
+                "/api/auth/login"
+            ) ||
+            originalRequest?.url?.includes(
+                "/api/auth/refresh"
+            )
+        ) {
+
+            return Promise.reject(error);
+        }
+
+
+        // ======================================
+        // Access token expired
+        // ======================================
+
+        if (
+            (error.response.status === 401 ||
+                error.response.status === 403) &&
             !originalRequest._retry
         ) {
 
             originalRequest._retry = true;
 
+
             try {
 
                 const refreshToken =
-                    localStorage.getItem("refreshToken");
+                    localStorage.getItem(
+                        "refreshToken"
+                    );
+
 
                 if (!refreshToken) {
-                    throw new Error("Refresh token not found");
+
+                    throw new Error(
+                        "Refresh token not found"
+                    );
                 }
 
 
+                // ==================================
                 // Request new access token
-                const response = await axios.post(
-                    "http://localhost:8080/api/auth/refresh",
-                    {
-                        refreshToken: refreshToken
-                    }
-                );
+                // ==================================
+
+                const refreshResponse =
+                    await axios.post(
+                        "http://localhost:8080/api/auth/refresh",
+                        {
+                            refreshToken
+                        }
+                    );
 
 
                 const newAccessToken =
-                    response.data.accessToken;
+                    refreshResponse.data.accessToken;
 
 
-                // Save new access token
+                const newRefreshToken =
+                    refreshResponse.data.refreshToken;
+
+
+                if (!newAccessToken) {
+
+                    throw new Error(
+                        "New access token not received"
+                    );
+                }
+
+
+                // ==================================
+                // Save new tokens
+                // ==================================
+
                 localStorage.setItem(
                     "accessToken",
                     newAccessToken
                 );
 
 
-                // Add new token to original request
+                if (newRefreshToken) {
+
+                    localStorage.setItem(
+                        "refreshToken",
+                        newRefreshToken
+                    );
+
+                }
+
+
+                // ==================================
+                // Retry original request
+                // ==================================
+
+                originalRequest.headers =
+                    originalRequest.headers || {};
+
                 originalRequest.headers.Authorization =
                     `Bearer ${newAccessToken}`;
 
 
-                // Retry original request
-                return axiosClient(originalRequest);
+                return axiosClient(
+                    originalRequest
+                );
 
             } catch (refreshError) {
 
@@ -97,12 +171,26 @@ axiosClient.interceptors.response.use(
                     refreshError
                 );
 
-                localStorage.removeItem("accessToken");
-                localStorage.removeItem("refreshToken");
+
+                // ==================================
+                // Completely logout
+                // ==================================
+
+                localStorage.removeItem(
+                    "accessToken"
+                );
+
+                localStorage.removeItem(
+                    "refreshToken"
+                );
+
 
                 window.location.reload();
 
-                return Promise.reject(refreshError);
+
+                return Promise.reject(
+                    refreshError
+                );
             }
         }
 
