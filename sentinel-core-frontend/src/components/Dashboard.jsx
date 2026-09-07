@@ -483,23 +483,11 @@ function Dashboard() {
         ).length;
 
 
-    const cpu =
-        summary.averageCpu ??
-        summary.cpuUsage ??
-        summary.cpu ??
-        0;
+    const cpu = Number(summary.avgCpuUsage ?? 0);
 
-    const memory =
-        summary.averageMemory ??
-        summary.memoryUsage ??
-        summary.memory ??
-        0;
+    const memory = Number(summary.avgMemoryUsage ?? 0);
 
-    const disk =
-        summary.averageDisk ??
-        summary.diskUsage ??
-        summary.disk ??
-        0;
+    const disk = Number(summary.avgDiskUsage ?? 0);
 
 
     /* =====================================================
