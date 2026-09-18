@@ -2,85 +2,171 @@ import {
     createContext,
     useContext,
     useEffect,
-    useState
+    useState,
 } from "react";
 
 import { jwtDecode } from "jwt-decode";
 
+
 const AuthContext = createContext(null);
+
 
 export function AuthProvider({ children }) {
 
-    const [accessToken, setAccessToken] = useState(
-        () => localStorage.getItem("accessToken")
-    );
+    const [accessToken, setAccessToken] =
+        useState(
+            () =>
+                localStorage.getItem(
+                    "accessToken"
+                )
+        );
 
-    const [refreshToken, setRefreshToken] = useState(
-        () => localStorage.getItem("refreshToken")
-    );
 
-    const [roles, setRoles] = useState([]);
+    const [refreshToken, setRefreshToken] =
+        useState(
+            () =>
+                localStorage.getItem(
+                    "refreshToken"
+                )
+        );
+
+
+    const [roles, setRoles] =
+        useState([]);
+
 
     // ==========================================
-    // Decode JWT
+    // DECODE JWT
     // ==========================================
 
     const updateRoles = (token) => {
 
         if (!token) {
+
             setRoles([]);
+
             return;
         }
 
+
         try {
 
-            const decoded = jwtDecode(token);
+            const decoded =
+                jwtDecode(token);
 
-            setRoles(decoded.roles || []);
+
+            setRoles(
+                Array.isArray(decoded.roles)
+                    ? decoded.roles
+                    : []
+            );
+
 
         } catch (error) {
 
             console.error(
-                "Unable to decode access token",
+                "Unable to decode access token:",
                 error
             );
 
             setRoles([]);
+
         }
+
     };
 
 
     // ==========================================
-    // Restore authentication after refresh
+    // RESTORE AUTHENTICATION
     // ==========================================
 
     useEffect(() => {
 
         const storedAccessToken =
-            localStorage.getItem("accessToken");
+            localStorage.getItem(
+                "accessToken"
+            );
+
 
         if (storedAccessToken) {
-            updateRoles(storedAccessToken);
+
+            try {
+
+                const decoded =
+                    jwtDecode(
+                        storedAccessToken
+                    );
+
+
+                // Check expiration
+
+                const currentTime =
+                    Date.now() / 1000;
+
+
+                if (
+                    decoded.exp &&
+                    decoded.exp < currentTime
+                ) {
+
+                    localStorage.removeItem(
+                        "accessToken"
+                    );
+
+                    localStorage.removeItem(
+                        "refreshToken"
+                    );
+
+                    setAccessToken(null);
+                    setRefreshToken(null);
+                    setRoles([]);
+
+                    return;
+                }
+
+
+                updateRoles(
+                    storedAccessToken
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Invalid stored access token:",
+                    error
+                );
+
+                localStorage.removeItem(
+                    "accessToken"
+                );
+
+            }
+
         }
 
     }, []);
 
 
     // ==========================================
-    // Login
+    // LOGIN
     // ==========================================
 
-    const loginUser = (access, refresh) => {
+    const loginUser = (
+        access,
+        refresh
+    ) => {
 
-        // React state
         setAccessToken(access);
+
         setRefreshToken(refresh);
 
-        // Local storage
+
         localStorage.setItem(
             "accessToken",
             access
         );
+
 
         if (refresh) {
 
@@ -91,27 +177,38 @@ export function AuthProvider({ children }) {
 
         }
 
+
         updateRoles(access);
+
     };
 
 
     // ==========================================
-    // Logout
+    // LOGOUT
     // ==========================================
 
     const logout = () => {
 
         setAccessToken(null);
+
         setRefreshToken(null);
+
         setRoles([]);
 
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
+
+        localStorage.removeItem(
+            "accessToken"
+        );
+
+        localStorage.removeItem(
+            "refreshToken"
+        );
+
     };
 
 
     // ==========================================
-    // Authentication status
+    // AUTH STATUS
     // ==========================================
 
     const isAuthenticated =
@@ -123,6 +220,7 @@ export function AuthProvider({ children }) {
 
 
     return (
+
         <AuthContext.Provider
             value={{
                 accessToken,
@@ -131,12 +229,16 @@ export function AuthProvider({ children }) {
                 isAuthenticated,
                 isAdmin,
                 loginUser,
-                logout
+                logout,
             }}
         >
+
             {children}
+
         </AuthContext.Provider>
+
     );
+
 }
 
 
@@ -149,6 +251,7 @@ export function useAuth() {
     const context =
         useContext(AuthContext);
 
+
     if (!context) {
 
         throw new Error(
@@ -156,6 +259,7 @@ export function useAuth() {
         );
 
     }
+
 
     return context;
 }

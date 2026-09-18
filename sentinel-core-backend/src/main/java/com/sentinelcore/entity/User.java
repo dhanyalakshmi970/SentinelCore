@@ -6,21 +6,32 @@ import lombok.*;
 import java.util.Set;
 
 @Entity
-@Table(name="users")
+@Table(name = "users")
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(unique	=	true,	nullable	=	false)
+
+    @Column(unique = true, nullable = false)
     private String username;
-    @Column(nullable	=	false)
+
+    @Column(nullable = false)
     private String password;
+
+    @Column(unique = true, nullable = false)
     private String email;
+
+    private String firstName;
+
+    private String lastName;
+
+    private boolean enabled = true;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -29,6 +40,4 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles;
-
-    private boolean enabled = true;
 }

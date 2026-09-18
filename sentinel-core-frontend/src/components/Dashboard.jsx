@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import {
     Box,
     Button,
@@ -6,25 +8,20 @@ import {
     CardContent,
     Chip,
     CircularProgress,
+    Container,
     Grid,
     LinearProgress,
     Stack,
-    TextField,
     Typography,
-    InputAdornment,
-    IconButton,
-    Divider,
 } from "@mui/material";
 
 import {
     Computer,
     Memory,
     Storage,
-    Warning,
     Error as ErrorIcon,
     CheckCircle,
     Refresh,
-    Search,
     AccessTime,
 } from "@mui/icons-material";
 
@@ -32,9 +29,9 @@ import axiosClient from "../api/axiosClient";
 import { useAuth } from "../context/AuthContext";
 
 
-/* =========================================================
-   HELPER FUNCTIONS
-========================================================= */
+// ============================================================
+// HELPER FUNCTIONS
+// ============================================================
 
 const getHealthStatus = (value) => {
     const number = Number(value) || 0;
@@ -60,25 +57,6 @@ const getHealthStatus = (value) => {
 };
 
 
-const getStatusColor = (status) => {
-    switch (String(status).toUpperCase()) {
-        case "ONLINE":
-        case "HEALTHY":
-            return "success";
-
-        case "WARNING":
-            return "warning";
-
-        case "CRITICAL":
-        case "OFFLINE":
-            return "error";
-
-        default:
-            return "default";
-    }
-};
-
-
 const getMetricValue = (value) => {
     const number = Number(value);
 
@@ -90,19 +68,19 @@ const getMetricValue = (value) => {
 };
 
 
-/* =========================================================
-   SUMMARY CARD
-========================================================= */
+// ============================================================
+// SUMMARY CARD
+// ============================================================
 
 function SummaryCard({
-    title,
-    value,
-    subtitle,
-    icon,
-    iconBackground,
-    iconColor,
-    onClick,
-}) {
+                         title,
+                         value,
+                         subtitle,
+                         icon,
+                         iconBackground,
+                         iconColor,
+                         onClick,
+                     }) {
     return (
         <Card
             onClick={onClick}
@@ -115,14 +93,15 @@ function SummaryCard({
 
                 "&:hover": onClick
                     ? {
-                          transform: "translateY(-3px)",
-                          boxShadow:
-                              "0 10px 30px rgba(16,24,40,0.10)",
-                      }
+                        transform: "translateY(-3px)",
+                        boxShadow:
+                            "0 10px 30px rgba(16,24,40,0.10)",
+                    }
                     : {},
             }}
         >
             <CardContent sx={{ p: 3 }}>
+
                 <Box
                     sx={{
                         display: "flex",
@@ -130,7 +109,9 @@ function SummaryCard({
                         alignItems: "flex-start",
                     }}
                 >
+
                     <Box>
+
                         <Typography
                             variant="body2"
                             sx={{
@@ -163,7 +144,9 @@ function SummaryCard({
                         >
                             {subtitle}
                         </Typography>
+
                     </Box>
+
 
                     <Box
                         sx={{
@@ -179,22 +162,24 @@ function SummaryCard({
                     >
                         {icon}
                     </Box>
+
                 </Box>
+
             </CardContent>
         </Card>
     );
 }
 
 
-/* =========================================================
-   HEALTH CARD
-========================================================= */
+// ============================================================
+// HEALTH CARD
+// ============================================================
 
 function HealthCard({
-    title,
-    value,
-    icon,
-}) {
+                        title,
+                        value,
+                        icon,
+                    }) {
     const metric = getMetricValue(value);
     const health = getHealthStatus(metric);
 
@@ -206,16 +191,19 @@ function HealthCard({
             }}
         >
             <CardContent sx={{ p: 3 }}>
+
                 <Stack
                     direction="row"
                     justifyContent="space-between"
                     alignItems="center"
                 >
+
                     <Stack
                         direction="row"
                         spacing={1.5}
                         alignItems="center"
                     >
+
                         <Box
                             sx={{
                                 width: 40,
@@ -231,19 +219,21 @@ function HealthCard({
                             {icon}
                         </Box>
 
-                        <Typography
-                            fontWeight={600}
-                        >
+                        <Typography fontWeight={600}>
                             {title}
                         </Typography>
+
                     </Stack>
+
 
                     <Chip
                         label={health.label}
                         color={health.color}
                         size="small"
                     />
+
                 </Stack>
+
 
                 <Typography
                     variant="h4"
@@ -254,6 +244,7 @@ function HealthCard({
                 >
                     {metric}%
                 </Typography>
+
 
                 <LinearProgress
                     variant="determinate"
@@ -267,6 +258,7 @@ function HealthCard({
                     }}
                 />
 
+
                 <Typography
                     variant="body2"
                     sx={{
@@ -276,41 +268,42 @@ function HealthCard({
                 >
                     Current utilization
                 </Typography>
+
             </CardContent>
         </Card>
     );
 }
 
 
-/* =========================================================
-   DASHBOARD
-========================================================= */
+// ============================================================
+// DASHBOARD
+// ============================================================
 
 function Dashboard() {
-    const { logout } = useAuth();
+
+    const navigate = useNavigate();
+
+    const { logout, isAdmin } = useAuth();
 
     const [summary, setSummary] = useState({});
-    const [assets, setAssets] = useState([]);
-    const [alerts, setAlerts] = useState([]);
-
-    const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState("ALL");
 
     const [loading, setLoading] = useState(true);
+
     const [refreshing, setRefreshing] = useState(false);
+
     const [error, setError] = useState("");
 
     const [lastUpdated, setLastUpdated] = useState(null);
 
 
-    /* =====================================================
-       LOAD DASHBOARD
-    ===================================================== */
+    // ========================================================
+    // LOAD DASHBOARD SUMMARY
+    // ========================================================
 
-    const loadDashboard = async (
-        showLoader = true
-    ) => {
+    const loadDashboard = async (showLoader = true) => {
+
         try {
+
             if (showLoader) {
                 setLoading(true);
             } else {
@@ -319,43 +312,21 @@ function Dashboard() {
 
             setError("");
 
-            const [
-                summaryResponse,
-                assetsResponse,
-                alertsResponse,
-            ] = await Promise.all([
-                axiosClient.get(
-                    "/api/assets/dashboard/summary"
-                ),
 
-                axiosClient.get(
-                    "/api/assets/getAll"
-                ),
+            const response = await axiosClient.get(
+                "/api/assets/dashboard/summary"
+            );
 
-                axiosClient.get(
-                    "/api/alerts/open"
-                ),
-            ]);
 
             setSummary(
-                summaryResponse.data || {}
+                response.data || {}
             );
 
-            setAssets(
-                Array.isArray(assetsResponse.data)
-                    ? assetsResponse.data
-                    : []
-            );
-
-            setAlerts(
-                Array.isArray(alertsResponse.data)
-                    ? alertsResponse.data
-                    : []
-            );
 
             setLastUpdated(new Date());
 
         } catch (err) {
+
             console.error(
                 "Dashboard loading error:",
                 err
@@ -366,6 +337,7 @@ function Dashboard() {
             );
 
         } finally {
+
             if (showLoader) {
                 setLoading(false);
             }
@@ -375,11 +347,12 @@ function Dashboard() {
     };
 
 
-    /* =====================================================
-       INITIAL LOAD + AUTO REFRESH
-    ===================================================== */
+    // ========================================================
+    // INITIAL LOAD + AUTO REFRESH
+    // ========================================================
 
     useEffect(() => {
+
         loadDashboard(true);
 
         const interval = setInterval(() => {
@@ -389,112 +362,71 @@ function Dashboard() {
         return () => {
             clearInterval(interval);
         };
+
     }, []);
 
 
-    /* =====================================================
-       SEARCH + FILTER
-    ===================================================== */
-
-    const filteredAssets = assets.filter(
-        (asset) => {
-            const searchText =
-                search.toLowerCase().trim();
-
-            const assetName =
-                String(
-                    asset.name ||
-                        asset.assetName ||
-                        ""
-                ).toLowerCase();
-
-            const hostname =
-                String(
-                    asset.hostname || ""
-                ).toLowerCase();
-
-            const ipAddress =
-                String(
-                    asset.ipAddress ||
-                        asset.ip ||
-                        ""
-                ).toLowerCase();
-
-            const matchesSearch =
-                !searchText ||
-                assetName.includes(searchText) ||
-                hostname.includes(searchText) ||
-                ipAddress.includes(searchText);
-
-            const assetStatus =
-                String(
-                    asset.status || ""
-                ).toUpperCase();
-
-            const matchesStatus =
-                statusFilter === "ALL" ||
-                assetStatus === statusFilter;
-
-            return (
-                matchesSearch &&
-                matchesStatus
-            );
-        }
-    );
-
-
-    /* =====================================================
-       SUMMARY VALUES
-    ===================================================== */
+    // ========================================================
+    // SUMMARY VALUES
+    // ========================================================
 
     const totalAssets =
         summary.totalAssets ??
         summary.total ??
-        assets.length;
+        0;
+
 
     const onlineAssets =
         summary.onlineAssets ??
         summary.online ??
-        assets.filter(
-            (asset) =>
-                String(
-                    asset.status
-                ).toUpperCase() === "ONLINE"
-        ).length;
+        0;
 
-    const warnings =
-        summary.warnings ??
-        summary.warningCount ??
-        alerts.filter(
-            (alert) =>
-                String(
-                    alert.severity
-                ).toUpperCase() === "WARNING"
-        ).length;
 
-    const critical =
+    const offlineAssets =
+        summary.offlineAssets ??
+        summary.offline ??
+        0;
+
+
+    const criticalAlerts =
+        summary.criticalAlerts ??
         summary.critical ??
         summary.criticalCount ??
-        alerts.filter(
-            (alert) =>
-                String(
-                    alert.severity
-                ).toUpperCase() === "CRITICAL"
-        ).length;
+        0;
 
 
-    const cpu = Number(summary.avgCpuUsage ?? 0);
+    const uptime =
+        Number(
+            summary.uptimePercentage ??
+            summary.uptime ??
+            0
+        );
 
-    const memory = Number(summary.avgMemoryUsage ?? 0);
 
-    const disk = Number(summary.avgDiskUsage ?? 0);
+    const cpu =
+        Number(
+            summary.avgCpuUsage ?? 0
+        );
 
 
-    /* =====================================================
-       LOADING SCREEN
-    ===================================================== */
+    const memory =
+        Number(
+            summary.avgMemoryUsage ?? 0
+        );
+
+
+    const disk =
+        Number(
+            summary.avgDiskUsage ?? 0
+        );
+
+
+    // ========================================================
+    // LOADING
+    // ========================================================
 
     if (loading) {
+
         return (
             <Box
                 sx={{
@@ -505,28 +437,31 @@ function Dashboard() {
                     backgroundColor: "#f5f7fb",
                 }}
             >
+
                 <Stack
                     spacing={2}
                     alignItems="center"
                 >
+
                     <CircularProgress />
 
-                    <Typography
-                        color="text.secondary"
-                    >
+                    <Typography color="text.secondary">
                         Loading infrastructure data...
                     </Typography>
+
                 </Stack>
+
             </Box>
         );
     }
 
 
-    /* =====================================================
-       MAIN UI
-    ===================================================== */
+    // ========================================================
+    // MAIN UI
+    // ========================================================
 
     return (
+
         <Box
             sx={{
                 minHeight: "100vh",
@@ -538,994 +473,600 @@ function Dashboard() {
                 },
             }}
         >
-            {/* ============================================
-                HEADER
-            ============================================ */}
 
-            <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: {
-                        xs: "flex-start",
-                        md: "center",
-                    },
-                    flexDirection: {
-                        xs: "column",
-                        md: "row",
-                    },
-                    gap: 2,
-                    mb: 4,
-                }}
-            >
-                <Box>
-                    <Typography
-                        variant="h4"
-                        sx={{
-                            fontWeight: 700,
-                            color: "#172033",
-                            fontSize: {
-                                xs: "1.7rem",
-                                md: "2.2rem",
-                            },
-                        }}
-                    >
-                        Infrastructure Overview
-                    </Typography>
+            <Container maxWidth="xl">
 
-                    <Typography
-                        variant="body1"
-                        sx={{
-                            mt: 0.5,
-                            color: "#667085",
-                        }}
-                    >
-                        Monitor and manage your
-                        enterprise infrastructure
-                    </Typography>
+                {/* ==================================================
+                    HEADER
+                ================================================== */}
 
-                    <Stack
-                        direction="row"
-                        spacing={1}
-                        alignItems="center"
-                        sx={{ mt: 1.5 }}
-                    >
-                        <Box
-                            sx={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: "50%",
-                                backgroundColor:
-                                    "#16a34a",
-                            }}
-                        />
-
-                        <Typography
-                            variant="body2"
-                            color="text.secondary"
-                        >
-                            All systems operational
-                        </Typography>
-
-                        {lastUpdated && (
-                            <>
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                >
-                                    •
-                                </Typography>
-
-                                <AccessTime
-                                    sx={{
-                                        fontSize: 16,
-                                        color: "#98a2b3",
-                                    }}
-                                />
-
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                >
-                                    Updated{" "}
-                                    {lastUpdated.toLocaleTimeString()}
-                                </Typography>
-                            </>
-                        )}
-                    </Stack>
-                </Box>
-
-                <Stack
-                    direction="row"
-                    spacing={1}
-                >
-                    <Button
-                        variant="outlined"
-                        startIcon={
-                            refreshing ? (
-                                <CircularProgress
-                                    size={16}
-                                />
-                            ) : (
-                                <Refresh />
-                            )
-                        }
-                        onClick={() =>
-                            loadDashboard(true)
-                        }
-                        disabled={refreshing}
-                        sx={{
-                            borderColor:
-                                "#d0d5dd",
-                            color: "#344054",
-                            backgroundColor:
-                                "#fff",
-
-                            "&:hover": {
-                                backgroundColor:
-                                    "#f9fafb",
-                                borderColor:
-                                    "#98a2b3",
-                            },
-                        }}
-                    >
-                        Refresh
-                    </Button>
-
-                    <Button
-                        variant="outlined"
-                        onClick={logout}
-                        sx={{
-                            borderColor:
-                                "#f04438",
-                            color: "#d92d20",
-
-                            "&:hover": {
-                                backgroundColor:
-                                    "#fef3f2",
-                                borderColor:
-                                    "#d92d20",
-                            },
-                        }}
-                    >
-                        Logout
-                    </Button>
-                </Stack>
-            </Box>
-
-
-            {/* ============================================
-                ERROR
-            ============================================ */}
-
-            {error && (
-                <Card
+                <Box
                     sx={{
-                        mb: 3,
-                        border:
-                            "1px solid #fecdca",
-                        backgroundColor:
-                            "#fffbfa",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: {
+                            xs: "flex-start",
+                            md: "center",
+                        },
+                        flexDirection: {
+                            xs: "column",
+                            md: "row",
+                        },
+                        gap: 2,
+                        mb: 4,
                     }}
                 >
-                    <CardContent>
+
+                    <Box>
+
+                        <Typography
+                            variant="h4"
+                            sx={{
+                                fontWeight: 700,
+                                color: "#172033",
+                                fontSize: {
+                                    xs: "1.7rem",
+                                    md: "2.2rem",
+                                },
+                            }}
+                        >
+                            Infrastructure Overview
+                        </Typography>
+
+
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                mt: 0.5,
+                                color: "#667085",
+                            }}
+                        >
+                            Monitor your enterprise
+                            infrastructure
+                        </Typography>
+
+
                         <Stack
                             direction="row"
-                            spacing={2}
+                            spacing={1}
                             alignItems="center"
+                            sx={{ mt: 1.5 }}
                         >
-                            <ErrorIcon
-                                color="error"
-                            />
 
-                            <Box sx={{ flex: 1 }}>
-                                <Typography
-                                    fontWeight={600}
-                                >
-                                    Unable to update
-                                    dashboard
-                                </Typography>
-
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                >
-                                    {error}
-                                </Typography>
-                            </Box>
-
-                            <Button
-                                size="small"
-                                variant="contained"
-                                onClick={() =>
-                                    loadDashboard(true)
-                                }
-                            >
-                                Retry
-                            </Button>
-                        </Stack>
-                    </CardContent>
-                </Card>
-            )}
-
-
-            {/* ============================================
-                SUMMARY CARDS
-            ============================================ */}
-
-            <Grid
-                container
-                spacing={2}
-                sx={{ mb: 4 }}
-            >
-                <Grid
-                    size={{
-                        xs: 12,
-                        sm: 6,
-                        lg: 3,
-                    }}
-                >
-                    <SummaryCard
-                        title="Total Assets"
-                        value={totalAssets}
-                        subtitle="Assets under monitoring"
-                        icon={<Computer />}
-                        iconBackground="#eff6ff"
-                        iconColor="#2563eb"
-                        onClick={() => {
-                            setStatusFilter(
-                                "ALL"
-                            );
-                            window.scrollTo({
-                                top: document.body
-                                    .scrollHeight,
-                                behavior: "smooth",
-                            });
-                        }}
-                    />
-                </Grid>
-
-                <Grid
-                    size={{
-                        xs: 12,
-                        sm: 6,
-                        lg: 3,
-                    }}
-                >
-                    <SummaryCard
-                        title="Online"
-                        value={onlineAssets}
-                        subtitle="Currently operational"
-                        icon={
-                            <CheckCircle />
-                        }
-                        iconBackground="#f0fdf4"
-                        iconColor="#16a34a"
-                        onClick={() =>
-                            setStatusFilter(
-                                "ONLINE"
-                            )
-                        }
-                    />
-                </Grid>
-
-                <Grid
-                    size={{
-                        xs: 12,
-                        sm: 6,
-                        lg: 3,
-                    }}
-                >
-                    <SummaryCard
-                        title="Warnings"
-                        value={warnings}
-                        subtitle="Needs attention"
-                        icon={<Warning />}
-                        iconBackground="#fffbeb"
-                        iconColor="#f59e0b"
-                        onClick={() =>
-                            setStatusFilter(
-                                "WARNING"
-                            )
-                        }
-                    />
-                </Grid>
-
-                <Grid
-                    size={{
-                        xs: 12,
-                        sm: 6,
-                        lg: 3,
-                    }}
-                >
-                    <SummaryCard
-                        title="Critical"
-                        value={critical}
-                        subtitle="Action required"
-                        icon={<ErrorIcon />}
-                        iconBackground="#fef2f2"
-                        iconColor="#dc2626"
-                        onClick={() =>
-                            setStatusFilter(
-                                "CRITICAL"
-                            )
-                        }
-                    />
-                </Grid>
-            </Grid>
-
-
-            {/* ============================================
-                SYSTEM HEALTH
-            ============================================ */}
-
-            <Box sx={{ mb: 4 }}>
-                <Box sx={{ mb: 2 }}>
-                    <Typography
-                        variant="h6"
-                        sx={{ fontWeight: 700 }}
-                    >
-                        System Health
-                    </Typography>
-
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                    >
-                        Current infrastructure
-                        resource utilization
-                    </Typography>
-                </Box>
-
-                <Grid
-                    container
-                    spacing={2}
-                >
-                    <Grid
-                        size={{
-                            xs: 12,
-                            md: 4,
-                        }}
-                    >
-                        <HealthCard
-                            title="CPU Usage"
-                            value={cpu}
-                            icon={<Computer />}
-                        />
-                    </Grid>
-
-                    <Grid
-                        size={{
-                            xs: 12,
-                            md: 4,
-                        }}
-                    >
-                        <HealthCard
-                            title="Memory Usage"
-                            value={memory}
-                            icon={<Memory />}
-                        />
-                    </Grid>
-
-                    <Grid
-                        size={{
-                            xs: 12,
-                            md: 4,
-                        }}
-                    >
-                        <HealthCard
-                            title="Disk Usage"
-                            value={disk}
-                            icon={<Storage />}
-                        />
-                    </Grid>
-                </Grid>
-            </Box>
-
-
-            {/* ============================================
-                OPEN ALERTS
-            ============================================ */}
-
-            <Box sx={{ mb: 4 }}>
-                <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    sx={{ mb: 2 }}
-                >
-                    <Box>
-                        <Typography
-                            variant="h6"
-                            sx={{ fontWeight: 700 }}
-                        >
-                            Open Alerts
-                        </Typography>
-
-                        <Typography
-                            variant="body2"
-                            color="text.secondary"
-                        >
-                            Issues requiring attention
-                        </Typography>
-                    </Box>
-
-                    <Chip
-                        label={`${alerts.length} active`}
-                        color={
-                            alerts.length > 0
-                                ? "warning"
-                                : "success"
-                        }
-                    />
-                </Stack>
-
-                {alerts.length === 0 ? (
-                    <Card
-                        sx={{
-                            borderRadius: 3,
-                            textAlign: "center",
-                            py: 5,
-                        }}
-                    >
-                        <CheckCircle
-                            sx={{
-                                fontSize: 52,
-                                color: "success.main",
-                                mb: 1,
-                            }}
-                        />
-
-                        <Typography
-                            variant="h6"
-                            fontWeight={700}
-                        >
-                            All Systems Clear
-                        </Typography>
-
-                        <Typography
-                            variant="body2"
-                            color="text.secondary"
-                        >
-                            No active infrastructure
-                            alerts detected.
-                        </Typography>
-                    </Card>
-                ) : (
-                    <Stack spacing={1.5}>
-                        {alerts
-                            .slice(0, 5)
-                            .map((alert, index) => {
-                                const severity =
-                                    String(
-                                        alert.severity ||
-                                            "WARNING"
-                                    ).toUpperCase();
-
-                                const isCritical =
-                                    severity ===
-                                    "CRITICAL";
-
-                                return (
-                                    <Card
-                                        key={
-                                            alert.id ||
-                                            index
-                                        }
-                                        sx={{
-                                            borderLeft:
-                                                isCritical
-                                                    ? "4px solid #dc2626"
-                                                    : "4px solid #f59e0b",
-                                            borderRadius: 2,
-                                            transition:
-                                                "all 0.2s ease",
-
-                                            "&:hover": {
-                                                boxShadow:
-                                                    "0 8px 24px rgba(16,24,40,0.10)",
-                                            },
-                                        }}
-                                    >
-                                        <CardContent
-                                            sx={{
-                                                py: 2,
-                                                "&:last-child":
-                                                    {
-                                                        pb: 2,
-                                                    },
-                                            }}
-                                        >
-                                            <Stack
-                                                direction={{
-                                                    xs: "column",
-                                                    sm: "row",
-                                                }}
-                                                justifyContent="space-between"
-                                                spacing={2}
-                                            >
-                                                <Box>
-                                                    <Stack
-                                                        direction="row"
-                                                        spacing={1}
-                                                        alignItems="center"
-                                                    >
-                                                        <Typography
-                                                            fontWeight={
-                                                                700
-                                                            }
-                                                        >
-                                                            {alert.assetName ||
-                                                                alert.asset?.name ||
-                                                                `Alert #${
-    alert.id ||
-    index +
-    1
-}`}
-                                                        </Typography>
-
-                                                        <Chip
-                                                            size="small"
-                                                            label={
-                                                                severity
-                                                            }
-                                                            color={
-                                                                getStatusColor(
-                                                                    severity
-                                                                )
-                                                            }
-                                                        />
-                                                    </Stack>
-
-                                                    <Typography
-                                                        variant="body2"
-                                                        color="text.secondary"
-                                                        sx={{
-                                                            mt: 0.5,
-                                                        }}
-                                                    >
-                                                        {alert.message ||
-                                                            alert.description ||
-                                                            "Infrastructure issue detected"}
-                                                    </Typography>
-                                                </Box>
-
-                                                <Typography
-                                                    variant="caption"
-                                                    color="text.secondary"
-                                                    sx={{
-                                                        whiteSpace:
-                                                            "nowrap",
-                                                    }}
-                                                >
-                                                    {alert.createdAt
-                                                        ? new Date(
-                                                              alert.createdAt
-                                                          ).toLocaleString()
-                                                        : "Recently"}
-                                                </Typography>
-                                            </Stack>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
-                    </Stack>
-                )}
-            </Box>
-
-
-            {/* ============================================
-                ASSETS
-            ============================================ */}
-
-            <Box>
-                <Box sx={{ mb: 2 }}>
-                    <Typography
-                        variant="h6"
-                        sx={{ fontWeight: 700 }}
-                    >
-                        Assets
-                    </Typography>
-
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                    >
-                        Search and monitor your
-                        infrastructure assets
-                    </Typography>
-                </Box>
-
-
-                {/* SEARCH + FILTERS */}
-
-                <Card
-                    sx={{
-                        mb: 2,
-                        borderRadius: 3,
-                    }}
-                >
-                    <CardContent>
-                        <Stack
-                            direction={{
-                                xs: "column",
-                                md: "row",
-                            }}
-                            spacing={2}
-                        >
-                            <TextField
-                                fullWidth
-                                value={search}
-                                onChange={(event) =>
-                                    setSearch(
-                                        event.target.value
-                                    )
-                                }
-                                placeholder="Search by asset name, hostname or IP address..."
-                                size="small"
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <Search
-                                                sx={{
-                                                    color:
-                                                        "#98a2b3",
-                                                }}
-                                            />
-                                        </InputAdornment>
-                                    ),
-                                }}
-                            />
-
-                            <Stack
-                                direction="row"
-                                spacing={1}
-                                flexWrap="wrap"
-                            >
-                                {[
-                                    "ALL",
-                                    "ONLINE",
-                                    "WARNING",
-                                    "CRITICAL",
-                                ].map(
-                                    (status) => (
-                                        <Button
-                                            key={
-                                                status
-                                            }
-                                            size="small"
-                                            variant={
-                                                statusFilter ===
-                                                status
-                                                    ? "contained"
-                                                    : "outlined"
-                                            }
-                                            onClick={() =>
-                                                setStatusFilter(
-                                                    status
-                                                )
-                                            }
-                                        >
-                                            {status ===
-                                            "ALL"
-                                                ? "All"
-                                                : status
-                                                      .charAt(
-                                                          0
-                                                      )
-                                                      .toUpperCase() +
-                                                  status
-                                                      .slice(
-                                                          1
-                                                      )
-                                                      .toLowerCase()}
-                                        </Button>
-                                    )
-                                )}
-                            </Stack>
-                        </Stack>
-                    </CardContent>
-                </Card>
-
-
-                {/* ASSET LIST */}
-
-                <Card
-                    sx={{
-                        borderRadius: 3,
-                        overflow: "hidden",
-                    }}
-                >
-                    {filteredAssets.length ===
-                    0 ? (
-                        <Box
-                            sx={{
-                                textAlign: "center",
-                                py: 6,
-                                px: 2,
-                            }}
-                        >
-                            <Search
+                            <Box
                                 sx={{
-                                    fontSize: 46,
-                                    color: "#98a2b3",
-                                    mb: 1,
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: "50%",
+                                    backgroundColor: "#16a34a",
                                 }}
                             />
-
-                            <Typography
-                                variant="h6"
-                                fontWeight={700}
-                            >
-                                No assets found
-                            </Typography>
 
                             <Typography
                                 variant="body2"
                                 color="text.secondary"
                             >
-                                Try changing your
-                                search or filter.
+                                Infrastructure monitoring active
                             </Typography>
-                        </Box>
-                    ) : (
-                        <Box>
-                            {filteredAssets.map(
-                                (
-                                    asset,
-                                    index
-                                ) => {
-                                    const status =
-                                        String(
-                                            asset.status ||
-                                                "UNKNOWN"
-                                        ).toUpperCase();
-
-                                    const assetName =
-                                        asset.name ||
-                                        asset.assetName ||
-                                        `Asset ${
-    index + 1
-}`;
-
-                                    const hostname =
-                                        asset.hostname ||
-                                        "-";
-
-                                    const ip =
-                                        asset.ipAddress ||
-                                        asset.ip ||
-                                        "-";
-
-                                    const assetCpu =
-                                        getMetricValue(
-                                            asset.cpuUsage ??
-                                                asset.cpu
-                                        );
-
-                                    const assetMemory =
-                                        getMetricValue(
-                                            asset.memoryUsage ??
-                                                asset.memory
-                                        );
-
-                                    const assetDisk =
-                                        getMetricValue(
-                                            asset.diskUsage ??
-                                                asset.disk
-                                        );
-
-                                    return (
-                                        <Box
-                                            key={
-                                                asset.id ||
-                                                asset.assetId ||
-                                                index
-                                            }
-                                        >
-                                            <Box
-                                                sx={{
-                                                    p: {
-                                                        xs: 2,
-                                                        md: 2.5,
-                                                    },
-
-                                                    "&:hover": {
-                                                        backgroundColor:
-                                                            "#f9fafb",
-                                                    },
-                                                }}
-                                            >
-                                                <Stack
-                                                    direction={{
-                                                        xs: "column",
-                                                        md: "row",
-                                                    }}
-                                                    spacing={2}
-                                                    alignItems={{
-                                                        md: "center",
-                                                    }}
-                                                >
-                                                    {/* NAME */}
-
-                                                    <Box
-                                                        sx={{
-                                                            flex: 1.5,
-                                                        }}
-                                                    >
-                                                        <Stack
-                                                            direction="row"
-                                                            spacing={
-                                                                1.5
-                                                            }
-                                                            alignItems="center"
-                                                        >
-                                                            <Box
-                                                                sx={{
-                                                                    width: 40,
-                                                                    height: 40,
-                                                                    borderRadius: 2,
-                                                                    display:
-                                                                        "flex",
-                                                                    alignItems:
-                                                                        "center",
-                                                                    justifyContent:
-                                                                        "center",
-                                                                    backgroundColor:
-                                                                        "#f2f4f7",
-                                                                    color:
-                                                                        "#475467",
-                                                                }}
-                                                            >
-                                                                <Computer
-                                                                    fontSize="small"
-                                                                />
-                                                            </Box>
-
-                                                            <Box>
-                                                                <Typography
-                                                                    fontWeight={
-                                                                        700
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        assetName
-                                                                    }
-                                                                </Typography>
-
-                                                                <Typography
-                                                                    variant="caption"
-                                                                    color="text.secondary"
-                                                                >
-                                                                    {
-                                                                        hostname
-                                                                    }
-                                                                    {" • "}
-                                                                    {
-                                                                        ip
-                                                                    }
-                                                                </Typography>
-                                                            </Box>
-                                                        </Stack>
-                                                    </Box>
 
 
-                                                    {/* STATUS */}
+                            {lastUpdated && (
+                                <>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                    >
+                                        •
+                                    </Typography>
 
-                                                    <Box
-                                                        sx={{
-                                                            minWidth: 110,
-                                                        }}
-                                                    >
-                                                        <Chip
-                                                            size="small"
-                                                            label={
-                                                                status
-                                                            }
-                                                            color={getStatusColor(
-                                                                status
-                                                            )}
-                                                        />
-                                                    </Box>
+                                    <AccessTime
+                                        sx={{
+                                            fontSize: 16,
+                                            color: "#98a2b3",
+                                        }}
+                                    />
 
-
-                                                    {/* CPU */}
-
-                                                    <Box
-                                                        sx={{
-                                                            minWidth: 110,
-                                                        }}
-                                                    >
-                                                        <Typography
-                                                            variant="caption"
-                                                            color="text.secondary"
-                                                        >
-                                                            CPU
-                                                        </Typography>
-
-                                                        <Typography
-                                                            fontWeight={
-                                                                600
-                                                            }
-                                                        >
-                                                            {
-                                                                assetCpu
-                                                            }
-                                                            %
-                                                        </Typography>
-                                                    </Box>
-
-
-                                                    {/* MEMORY */}
-
-                                                    <Box
-                                                        sx={{
-                                                            minWidth: 110,
-                                                        }}
-                                                    >
-                                                        <Typography
-                                                            variant="caption"
-                                                            color="text.secondary"
-                                                        >
-                                                            Memory
-                                                        </Typography>
-
-                                                        <Typography
-                                                            fontWeight={
-                                                                600
-                                                            }
-                                                        >
-                                                            {
-                                                                assetMemory
-                                                            }
-                                                            %
-                                                        </Typography>
-                                                    </Box>
-
-
-                                                    {/* DISK */}
-
-                                                    <Box
-                                                        sx={{
-                                                            minWidth: 110,
-                                                        }}
-                                                    >
-                                                        <Typography
-                                                            variant="caption"
-                                                            color="text.secondary"
-                                                        >
-                                                            Disk
-                                                        </Typography>
-
-                                                        <Typography
-                                                            fontWeight={
-                                                                600
-                                                            }
-                                                        >
-                                                            {
-                                                                assetDisk
-                                                            }
-                                                            %
-                                                        </Typography>
-                                                    </Box>
-                                                </Stack>
-                                            </Box>
-
-                                            {index <
-                                                filteredAssets.length -
-                                                    1 && (
-                                                <Divider />
-                                            )}
-                                        </Box>
-                                    );
-                                }
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                    >
+                                        Updated{" "}
+                                        {lastUpdated.toLocaleTimeString()}
+                                    </Typography>
+                                </>
                             )}
-                        </Box>
-                    )}
+
+                        </Stack>
+
+                    </Box>
+
+
+                    {/* HEADER BUTTONS */}
+
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        flexWrap="wrap"
+                        useFlexGap
+                    >
+
+                        {isAdmin && (
+                            <Button
+                                variant="contained"
+                                onClick={() =>
+                                    navigate("/add-asset")
+                                }
+                                sx={{
+                                    textTransform: "none",
+                                    fontWeight: 600,
+                                }}
+                            >
+                                + Add Asset
+                            </Button>
+                        )}
+
+
+                        <Button
+                            variant="outlined"
+                            onClick={() =>
+                                navigate("/assets")
+                            }
+                            sx={{
+                                textTransform: "none",
+                            }}
+                        >
+                            Assets
+                        </Button>
+
+
+                        <Button
+                            variant="outlined"
+                            onClick={() =>
+                                navigate("/alerts")
+                            }
+                            sx={{
+                                textTransform: "none",
+                            }}
+                        >
+                            Open Alerts
+                        </Button>
+
+
+                        <Button
+                            variant="outlined"
+                            startIcon={
+                                refreshing
+                                    ? <CircularProgress size={16} />
+                                    : <Refresh />
+                            }
+                            onClick={() =>
+                                loadDashboard(true)
+                            }
+                            disabled={refreshing}
+                            sx={{
+                                textTransform: "none",
+                            }}
+                        >
+                            Refresh
+                        </Button>
+
+
+                        <Button
+                            variant="outlined"
+                            onClick={logout}
+                            sx={{
+                                textTransform: "none",
+                                borderColor: "#f04438",
+                                color: "#d92d20",
+                            }}
+                        >
+                            Logout
+                        </Button>
+
+                    </Stack>
+
+                </Box>
+
+
+                {/* ==================================================
+                    ERROR
+                ================================================== */}
+
+                {error && (
+
+                    <Card
+                        sx={{
+                            mb: 3,
+                            border: "1px solid #fecdca",
+                            backgroundColor: "#fffbfa",
+                        }}
+                    >
+
+                        <CardContent>
+
+                            <Stack
+                                direction="row"
+                                spacing={2}
+                                alignItems="center"
+                            >
+
+                                <ErrorIcon color="error" />
+
+                                <Box sx={{ flex: 1 }}>
+
+                                    <Typography
+                                        fontWeight={600}
+                                    >
+                                        Unable to update dashboard
+                                    </Typography>
+
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                    >
+                                        {error}
+                                    </Typography>
+
+                                </Box>
+
+
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    onClick={() =>
+                                        loadDashboard(true)
+                                    }
+                                    sx={{
+                                        textTransform: "none",
+                                    }}
+                                >
+                                    Retry
+                                </Button>
+
+                            </Stack>
+
+                        </CardContent>
+
+                    </Card>
+                )}
+
+
+                {/* ==================================================
+                    SUMMARY CARDS
+                ================================================== */}
+
+                <Grid
+                    container
+                    spacing={2}
+                    sx={{ mb: 4 }}
+                >
+
+                    <Grid
+                        size={{
+                            xs: 12,
+                            sm: 6,
+                            lg: 3,
+                        }}
+                    >
+
+                        <SummaryCard
+                            title="Total Assets"
+                            value={totalAssets}
+                            subtitle="Assets under monitoring"
+                            icon={<Computer />}
+                            iconBackground="#eff6ff"
+                            iconColor="#2563eb"
+                            onClick={() =>
+                                navigate("/assets")
+                            }
+                        />
+
+                    </Grid>
+
+
+                    <Grid
+                        size={{
+                            xs: 12,
+                            sm: 6,
+                            lg: 3,
+                        }}
+                    >
+
+                        <SummaryCard
+                            title="Online"
+                            value={onlineAssets}
+                            subtitle="Currently operational"
+                            icon={<CheckCircle />}
+                            iconBackground="#f0fdf4"
+                            iconColor="#16a34a"
+                            onClick={() =>
+                                navigate("/assets")
+                            }
+                        />
+
+                    </Grid>
+
+
+                    <Grid
+                        size={{
+                            xs: 12,
+                            sm: 6,
+                            lg: 3,
+                        }}
+                    >
+
+                        <SummaryCard
+                            title="Uptime"
+                            value={`${Math.round(uptime)}%`}
+                            subtitle="Infrastructure availability"
+                            icon={<CheckCircle />}
+                            iconBackground="#f0fdf4"
+                            iconColor="#16a34a"
+                            onClick={() =>
+                                navigate("/assets")
+                            }
+                        />
+
+                    </Grid>
+
+
+                    <Grid
+                        size={{
+                            xs: 12,
+                            sm: 6,
+                            lg: 3,
+                        }}
+                    >
+
+                        <SummaryCard
+                            title="Critical Alerts"
+                            value={criticalAlerts}
+                            subtitle="Action required"
+                            icon={<ErrorIcon />}
+                            iconBackground="#fef2f2"
+                            iconColor="#dc2626"
+                            onClick={() =>
+                                navigate("/alerts")
+                            }
+                        />
+
+                    </Grid>
+
+                </Grid>
+
+
+                {/* ==================================================
+                    SYSTEM HEALTH
+                ================================================== */}
+
+                <Box sx={{ mb: 4 }}>
+
+                    <Box sx={{ mb: 2 }}>
+
+                        <Typography
+                            variant="h6"
+                            sx={{ fontWeight: 700 }}
+                        >
+                            System Health
+                        </Typography>
+
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                        >
+                            Current infrastructure
+                            resource utilization
+                        </Typography>
+
+                    </Box>
+
+
+                    <Grid
+                        container
+                        spacing={2}
+                    >
+
+                        <Grid
+                            size={{
+                                xs: 12,
+                                md: 4,
+                            }}
+                        >
+
+                            <HealthCard
+                                title="CPU Usage"
+                                value={cpu}
+                                icon={<Computer />}
+                            />
+
+                        </Grid>
+
+
+                        <Grid
+                            size={{
+                                xs: 12,
+                                md: 4,
+                            }}
+                        >
+
+                            <HealthCard
+                                title="Memory Usage"
+                                value={memory}
+                                icon={<Memory />}
+                            />
+
+                        </Grid>
+
+
+                        <Grid
+                            size={{
+                                xs: 12,
+                                md: 4,
+                            }}
+                        >
+
+                            <HealthCard
+                                title="Disk Usage"
+                                value={disk}
+                                icon={<Storage />}
+                            />
+
+                        </Grid>
+
+                    </Grid>
+
+                </Box>
+
+
+                {/* ==================================================
+                    QUICK NAVIGATION
+                ================================================== */}
+
+                <Card
+                    sx={{
+                        borderRadius: 3,
+                        mb: 3,
+                    }}
+                >
+
+                    <CardContent sx={{ p: 3 }}>
+
+                        <Typography
+                            variant="h6"
+                            fontWeight={700}
+                        >
+                            Quick Navigation
+                        </Typography>
+
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mt: 0.5, mb: 2 }}
+                        >
+                            Access detailed monitoring pages
+                        </Typography>
+
+
+                        <Stack
+                            direction={{
+                                xs: "column",
+                                sm: "row",
+                            }}
+                            spacing={2}
+                        >
+
+                            <Button
+                                variant="outlined"
+                                startIcon={<Computer />}
+                                onClick={() =>
+                                    navigate("/assets")
+                                }
+                                sx={{
+                                    textTransform: "none",
+                                    py: 1.2,
+                                }}
+                            >
+                                View All Assets
+                            </Button>
+
+
+                            <Button
+                                variant="outlined"
+                                startIcon={<ErrorIcon />}
+                                onClick={() =>
+                                    navigate("/alerts")
+                                }
+                                sx={{
+                                    textTransform: "none",
+                                    py: 1.2,
+                                }}
+                            >
+                                View Open Alerts
+                            </Button>
+
+
+                            {isAdmin && (
+                                <Button
+                                    variant="contained"
+                                    onClick={() =>
+                                        navigate("/add-asset")
+                                    }
+                                    sx={{
+                                        textTransform: "none",
+                                        py: 1.2,
+                                    }}
+                                >
+                                    Add New Asset
+                                </Button>
+                            )}
+
+                        </Stack>
+
+                    </CardContent>
+
                 </Card>
-            </Box>
+
+
+                {/* ==================================================
+                    OFFLINE INFORMATION
+                ================================================== */}
+
+                <Card
+                    sx={{
+                        borderRadius: 3,
+                    }}
+                >
+
+                    <CardContent sx={{ p: 3 }}>
+
+                        <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                        >
+
+                            <Box>
+
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Offline Assets
+                                </Typography>
+
+                                <Typography
+                                    variant="h5"
+                                    fontWeight={700}
+                                >
+                                    {offlineAssets}
+                                </Typography>
+
+                            </Box>
+
+
+                            <Button
+                                variant="text"
+                                onClick={() =>
+                                    navigate("/assets")
+                                }
+                                sx={{
+                                    textTransform: "none",
+                                }}
+                            >
+                                View Assets →
+                            </Button>
+
+                        </Stack>
+
+                    </CardContent>
+
+                </Card>
+
+            </Container>
+
         </Box>
     );
 }
+
 
 export default Dashboard;

@@ -12,8 +12,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -34,7 +36,20 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/sms/**").permitAll()
+
+                        // Google OAuth2
+                        .requestMatchers("/oauth2/**").permitAll()
+                        .requestMatchers("/login/**").permitAll()
+
                         .anyRequest().authenticated()
+                )
+
+                // Google OAuth2 Login
+                .oauth2Login(oauth2 -> oauth2
+                        .defaultSuccessUrl(
+                                "http://localhost:5173/dashboard",
+                                true
+                        )
                 )
 
                 .addFilterBefore(

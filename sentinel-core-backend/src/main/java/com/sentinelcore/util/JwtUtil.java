@@ -1,11 +1,14 @@
 package com.sentinelcore.util;
 
+import com.sentinelcore.entity.Role;
+import com.sentinelcore.entity.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.List;
 
 @Component
 public class JwtUtil {
@@ -24,10 +27,16 @@ public class JwtUtil {
             1000 * 60 * 60 * 24 * 7;
 
     // Generate short-lived access token
-    public String generateToken(String username) {
+    public String generateToken(User user) {
+
+        List<String> roles = user.getRoles()
+                .stream()
+                .map(Role::getName)
+                .toList();
 
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(user.getUsername())
+                .claim("roles", roles)
                 .setIssuedAt(new Date())
                 .setExpiration(
                         new Date(
