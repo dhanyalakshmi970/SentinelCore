@@ -13,6 +13,7 @@ import java.util.List;
 @Component
 public class JwtUtil {
 
+
     private final SecretKey key =
             Keys.secretKeyFor(
                     io.jsonwebtoken.SignatureAlgorithm.HS256
@@ -91,5 +92,13 @@ public class JwtUtil {
 
             return false;
         }
+    }
+    public Claims getClaims(String token) {
+
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 }

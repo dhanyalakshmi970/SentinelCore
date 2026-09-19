@@ -43,6 +43,8 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(
             @RequestBody Map<String, String> credentials) {
+        System.out.println("LOGIN REQUEST RECEIVED");
+        System.out.println("Credentials received: " + credentials);
 
         String usernameOrEmail =
                 credentials.get("usernameOrEmail");
