@@ -1,0 +1,1 @@
+export default function MetricBar({label,value}) { const n=Math.max(0,Math.min(100,Number(value)||0)); const cls=n>=80?'critical':n>=60?'warning':'healthy'; return <div className="metric-row"><div><span>{label}</span><b>{Math.round(n)}%</b></div><div className="metric-track"><span className={cls} style={{width:`${n}%`}}/></div></div>; }

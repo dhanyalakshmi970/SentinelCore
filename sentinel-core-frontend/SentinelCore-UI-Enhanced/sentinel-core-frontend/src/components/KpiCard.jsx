@@ -1,0 +1,1 @@
+export default function KpiCard({label,value,detail,icon:Icon,tone='blue',onClick}) { return <div className={`kpi-card ${tone}`} onClick={onClick}><div className="kpi-top"><span>{label}</span><div className="kpi-icon"><Icon size={19}/></div></div><div className="kpi-value">{value ?? '—'}</div><div className="kpi-detail">{detail}</div></div>; }

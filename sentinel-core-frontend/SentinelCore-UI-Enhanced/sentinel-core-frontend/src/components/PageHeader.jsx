@@ -1,0 +1,1 @@
+export default function PageHeader({title,description,actions}) { return <div className="page-header"><div><div className="eyebrow">SECURITY OPERATIONS</div><h1>{title}</h1><p>{description}</p></div><div className="header-actions">{actions}</div></div>; }

@@ -37,7 +37,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader == null ||
+                !authHeader.startsWith("Bearer ")) {
+
             filterChain.doFilter(request, response);
             return;
         }
@@ -46,21 +48,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
 
-            if (jwtUtil.isTokenValid(token)) {
+            String username = jwtUtil.extractUsername(token);
 
-                String username = jwtUtil.extractUsername(token);
+            if (username != null &&
+                    SecurityContextHolder
+                            .getContext()
+                            .getAuthentication() == null) {
 
-                if (username != null &&
-                        SecurityContextHolder.getContext().getAuthentication() == null) {
+                System.out.println("JWT username: " + username);
+                System.out.println("JWT valid: " + jwtUtil.isTokenValid(token));
+
+                if (jwtUtil.isTokenValid(token)) {
+                if (jwtUtil.isTokenValid(token)) {
 
                     Claims claims = jwtUtil.getClaims(token);
 
                     List<String> roles =
                             claims.get("roles", List.class);
-
-                    if (roles == null) {
-                        roles = List.of();
-                    }
 
                     List<SimpleGrantedAuthority> authorities =
                             roles.stream()
@@ -82,17 +86,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder
                             .getContext()
                             .setAuthentication(authentication);
-
-                    System.out.println(
-                            "JWT authenticated user: " + username
-                    );
                 }
-            } else {
-                System.out.println("JWT is invalid or expired");
             }
 
-        } catch (Exception e) {
-            System.out.println("JWT authentication failed:");
+        } } catch (Exception e) {
             e.printStackTrace();
         }
 
