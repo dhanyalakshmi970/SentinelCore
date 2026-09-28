@@ -24,3 +24,10 @@
 # OS files
 .DS_Store
 Thumbs.db
+
+# Spring Boot secrets
+application.properties
+application-*.properties
+
+# Maven build files
+target/
