@@ -1,0 +1,438 @@
+import { useEffect, useMemo, useState } from 'react';
+
+import {
+    Filter,
+    Plus,
+    RefreshCw,
+    Search,
+    Server,
+    SlidersHorizontal
+} from '../components/Icons';
+
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
+import {
+    getAllAssets,
+    searchAssets
+} from '../api/assetApi';
+
+import PageHeader from '../components/PageHeader';
+import StatusBadge from '../components/StatusBadge';
+
+
+export default function AssetsPage() {
+
+    const { isAdmin } = useAuth();
+
+    const [assets, setAssets] = useState([]);
+    const [search, setSearch] = useState('');
+    const [status, setStatus] = useState('');
+    const [risk, setRisk] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const nav = useNavigate();
+
+
+    const load = async () => {
+
+        setLoading(true);
+
+        try {
+
+            const r =
+                search || status || risk
+                    ? await searchAssets({
+                        search: search || undefined,
+                        status: status || undefined,
+                        risk: risk || undefined
+                    })
+                    : await getAllAssets();
+
+            setAssets(r.data || []);
+
+        } finally {
+
+            setLoading(false);
+
+        }
+    };
+
+
+    useEffect(() => {
+
+        load();
+
+    }, []);
+
+
+    const counts = useMemo(() => ({
+
+        all: assets.length,
+
+        online:
+        assets.filter(
+            a => a.status === 'ONLINE'
+        ).length,
+
+        warning:
+        assets.filter(
+            a => a.status === 'WARNING'
+        ).length,
+
+        critical:
+        assets.filter(
+            a => a.status === 'CRITICAL'
+        ).length,
+
+        offline:
+        assets.filter(
+            a => a.status === 'OFFLINE'
+        ).length
+
+    }), [assets]);
+
+
+    return (
+        <>
+
+            <PageHeader
+                title="Asset inventory"
+                description="Manage and monitor every server, application, database, and network asset."
+                actions={
+
+                    <>
+
+                        <button
+                            className="btn secondary"
+                            onClick={load}
+                        >
+                            <RefreshCw size={16} />
+                            Refresh
+                        </button>
+
+
+                        {/* ADMIN ONLY */}
+
+                        {isAdmin && (
+
+                            <button
+                                className="btn primary"
+                                onClick={() => nav('/add-asset')}
+                            >
+                                <Plus size={16} />
+                                Register asset
+                            </button>
+
+                        )}
+
+                    </>
+
+                }
+            />
+
+
+            <div className="mini-stats">
+
+                {[
+                    ['All assets', counts.all, ''],
+                    ['Online', counts.online, 'green'],
+                    ['Warning', counts.warning, 'amber'],
+                    ['Critical', counts.critical, 'red'],
+                    ['Offline', counts.offline, 'gray']
+                ].map(
+                    ([label, value, color]) => (
+
+                        <div
+                            className="mini-stat"
+                            key={label}
+                        >
+
+                            <span
+                                className={`mini-dot ${color}`}
+                            />
+
+                            <div>
+
+                                <b>{value}</b>
+
+                                <span>{label}</span>
+
+                            </div>
+
+                        </div>
+
+                    )
+                )}
+
+            </div>
+
+
+            <section className="panel">
+
+                <div className="filterbar">
+
+                    <div className="search-box">
+
+                        <Search size={17} />
+
+                        <input
+                            value={search}
+                            onChange={
+                                e =>
+                                    setSearch(
+                                        e.target.value
+                                    )
+                            }
+                            onKeyDown={
+                                e =>
+                                    e.key === 'Enter' &&
+                                    load()
+                            }
+                            placeholder="Search name or IP address..."
+                        />
+
+                    </div>
+
+
+                    <select
+                        value={status}
+                        onChange={
+                            e =>
+                                setStatus(
+                                    e.target.value
+                                )
+                        }
+                    >
+
+                        <option value="">
+                            All statuses
+                        </option>
+
+                        <option>
+                            ONLINE
+                        </option>
+
+                        <option>
+                            WARNING
+                        </option>
+
+                        <option>
+                            CRITICAL
+                        </option>
+
+                        <option>
+                            OFFLINE
+                        </option>
+
+                    </select>
+
+
+                    <select
+                        value={risk}
+                        onChange={
+                            e =>
+                                setRisk(
+                                    e.target.value
+                                )
+                        }
+                    >
+
+                        <option value="">
+                            All risk levels
+                        </option>
+
+                        <option>
+                            LOW
+                        </option>
+
+                        <option>
+                            MEDIUM
+                        </option>
+
+                        <option>
+                            HIGH
+                        </option>
+
+                        <option>
+                            CRITICAL
+                        </option>
+
+                    </select>
+
+
+                    <button
+                        className="btn secondary"
+                        onClick={load}
+                    >
+                        <Filter size={15} />
+                        Apply
+                    </button>
+
+                </div>
+
+
+                <div className="table-wrap">
+
+                    <table>
+
+                        <thead>
+
+                        <tr>
+                            <th>Asset</th>
+                            <th>Type</th>
+                            <th>IP address</th>
+                            <th>CPU</th>
+                            <th>Memory</th>
+                            <th>Disk</th>
+                            <th>Network</th>
+                            <th>Status</th>
+                        </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                        {assets.map(a => (
+
+                            <tr key={a.id}>
+
+                                <td>
+
+                                    <div className="asset-cell">
+
+                                        <div className="table-icon">
+
+                                            <Server size={16} />
+
+                                        </div>
+
+                                        <div>
+
+                                            <b>
+                                                {a.assetName}
+                                            </b>
+
+                                            <span>
+                                                    ID #{a.id}
+                                                </span>
+
+                                        </div>
+
+                                    </div>
+
+                                </td>
+
+
+                                <td>
+                                    {a.assetType}
+                                </td>
+
+
+                                <td className="mono">
+                                    {a.ipAddress}
+                                </td>
+
+
+                                <td>
+                                    <Usage
+                                        value={a.cpuUsage}
+                                    />
+                                </td>
+
+
+                                <td>
+                                    <Usage
+                                        value={a.memoryUsage}
+                                    />
+                                </td>
+
+
+                                <td>
+                                    <Usage
+                                        value={a.diskUsage}
+                                    />
+                                </td>
+
+
+                                <td>
+                                    <Usage
+                                        value={a.networkUsage}
+                                    />
+                                </td>
+
+
+                                <td>
+                                    <StatusBadge
+                                        value={a.status}
+                                    />
+                                </td>
+
+                            </tr>
+
+                        ))}
+
+                        </tbody>
+
+                    </table>
+
+
+                    {!assets.length && !loading && (
+
+                        <div className="empty">
+
+                            <SlidersHorizontal
+                                size={28}
+                            />
+
+                            <p>
+                                No assets match the current filters.
+                            </p>
+
+                        </div>
+
+                    )}
+
+                </div>
+
+            </section>
+
+        </>
+    );
+}
+
+
+function Usage({ value }) {
+
+    const n = Number(value) || 0;
+
+    return (
+
+        <div className="table-usage">
+
+            <span>
+                {Math.round(n)}%
+            </span>
+
+            <i>
+
+                <em
+                    className={
+                        n >= 80
+                            ? 'critical'
+                            : n >= 60
+                                ? 'warning'
+                                : ''
+                    }
+                    style={{
+                        width: `${Math.min(n, 100)}%`
+                    }}
+                />
+
+            </i>
+
+        </div>
+
+    );
+}
